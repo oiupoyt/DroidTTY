@@ -205,7 +205,9 @@ Settings › log › system monitor › *usage access*. Unlocks: screen-time and
 
 **After a reboot.** Without root, Android stops Shizuku at every reboot. On Android 13 and newer, switch on *Start on boot* in Shizuku's settings: it restarts itself over wireless debugging whenever the phone is on a Wi-Fi where you chose *Always allow on this network*. SysReadout notices when Shizuku comes back and reconnects. While Shizuku is away, one `shizk` row in the log says why instead of the tables.
 
-**One-tap setup.** Once Shizuku is connected, *set up access with shizuku* can switch on SysReadout's other access for you: usage access, notification access and the double-tap lock service, the same switches you would flip in Android's settings. It lists what it will change and does nothing until you tap *switch on*. Those grants stay after Shizuku stops.
+**Direct shell.** On some Android 16 phones Shizuku can't start SysReadout's helper process, even though Shizuku itself runs and other apps connect. Step 4 then stays at *connecting*. After 8 seconds SysReadout runs its commands through Shizuku's own shell instead, the way Shizuku's `rish` does, and the page says *connected through shizuku's own shell*. Everything works except server names from reverse DNS; names the DNS monitor sees still show. *Retry helper* tries the helper again.
+
+**One-tap setup.** Once Shizuku is connected, *set up access with shizuku* can switch on SysReadout's other access for you: usage access, notification access, the double-tap lock service and *display over other apps* (for the always-on display and lock cover), the same switches you would flip in Android's settings. It lists what it will change and does nothing until you tap *switch on*. Those grants stay after Shizuku stops.
 
 **If it misbehaves.** SysReadout never lets Shizuku hold up the home screen: every call is time-limited, a failed read keeps the last values instead of reporting everything gone, and a helper that keeps failing is left alone for a while (the `shizk` row says so) before SysReadout tries again. Switching *use shizuku* off stops all of it.
 
@@ -251,12 +253,38 @@ Settings › *lock screen*:
 
 Android's own clock and notifications are drawn on top. Only the lock screen is changed; the home screen is always SysReadout's own drawing.
 
+### Always-on display and lock cover
+
+Settings › *screen*. Both are off by default. They need *display over other apps* (Android's settings, or Shizuku's one-tap setup) and run a small foreground service, with a silent notification, that hears the screen turning off and on.
+
+**Always-on display.** After you turn the screen off, SysReadout turns it back on at very low brightness with one of four looks, drawn in your theme:
+
+- **minimal clock**: clock, date, battery, waiting notifications
+- **terminal status**: clock and status rows you pick
+- **prompt**: `root@<device>:~$` answering date, battery and notifications, with a blinking cursor
+- **log tail**: clock and the log's newest events from the last time home was open
+
+*Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). It moves a few pixels each minute against burn-in, and leaves out flicker and grain. Tap it to go on. Turning the screen off again or covering the proximity sensor (pocket, face down) keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black.
+
+The same looks are offered as Android's screen saver (settings › display › screen saver › *SysReadout always-on display*), which Android shows while charging or docked.
+
+**Lock cover.** Each time the screen turns on while the phone is locked, a boot screen plays over Android's lock screen, then a tap anywhere hands over to Android's own PIN, pattern or fingerprint. Unlocking it never skips Android's lock. Presets:
+
+- **bootline**: kernel lines and `[  OK  ]` services from this phone's kernel version, CPU count, memory, storage, network and battery, then a login prompt
+- **bios flash**: a power-on self test that counts up the memory, then flashes the security patch level with a progress bar
+- **dos prompt**: `C:\>` types `date`, `time`, `ver` and `mem`
+- **unix login**: a getty prompt with your last unlock and waiting notifications
+- **grub menu**: *Android* unlocks, *Camera* opens the secure camera, *Emergency call* opens the emergency dialer
+
+Every value comes from the phone; one it can't read is left out. Taps during the animation do nothing, so a pocket can't unlock. A fingerprint unlock straight away skips the cover. Settings › screen previews each look and preset.
+
 ## 9. Battery use
 
 - The log runs **only while the home screen is visible**. In another app or with the screen off it uses nothing.
 - Typical cost while visible is a few percent of one CPU core; more with every Shizuku table on at a 2-second refresh.
 - Rows that turn hardware on say so: `gps` and `gnss` keep GPS active while visible; `env` and `compass` read sensors once a second.
 - Flicker and grain are the only effects that redraw continuously.
+- The always-on display keeps the screen lit (dim) while it shows; on battery it stops below the level you set. The lock cover runs for a few seconds each time the screen turns on.
 
 The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
 
@@ -271,6 +299,8 @@ The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
 | Accessibility or notification access is greyed out (*restricted setting*) | Android 13+ blocks these for apps installed from a downloaded APK. In SysReadout's app info, open the ⋮ menu › *Allow restricted settings*, or use *set up access with shizuku*. |
 | The DNS monitor switches itself off | Another VPN took over, or Private DNS is set to a provider. |
 | `wifi` shows no network name | The `ssid` row needs the location permission *and* location switched on. |
+| *Connecting* never finishes in settings › shizuku | Wait 8 seconds: SysReadout switches to Shizuku's own shell (*direct shell*). If it stays, tap *retry now*, or stop and start Shizuku. |
+| Always-on display or lock cover doesn't appear | Check settings › screen › *display over other apps*. Some phones also need SysReadout's battery setting set to *unrestricted* so Android doesn't stop the screen service. |
 | Lock-screen snapshot doesn't show | Some phones override lock-screen wallpapers in their own theme settings; set the lock screen there to use the wallpaper. |
 | Rows are cut off at the bottom | Switch settings › log › *layout* to **feed**, or show fewer rows. |
 | Text over the log is hard to read | Use the *frosted* or *highlight* entry style, or turn down CRT glow. |

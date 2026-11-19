@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.SettingsStore
 import com.asnidev.sysreadout.system.LockService
@@ -43,8 +44,16 @@ class CoverActivity : ComponentActivity() {
     private val keyguard by lazy { getSystemService(KeyguardManager::class.java) }
     private val sensors by lazy { getSystemService(SensorManager::class.java) }
 
-    private val unlocked = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = finish()
+    private val screen = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // Screen off over the always-on display: the user wants it dark until the next wake.
+            if (intent.action == Intent.ACTION_SCREEN_OFF && mode == MODE_AOD) {
+                CoverState.suppressed = true
+                CoverState.aodSeenAt = 0L
+            }
+            // Either way this cover is done; the next wake starts a fresh one.
+            finish()
+        }
     }
 
     private val proximity = object : SensorEventListener {
@@ -77,7 +86,14 @@ class CoverActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         applyMode()
-        ContextCompat.registerReceiver(this, unlocked, IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            this, screen,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         // Back doesn't skip the cover; only the tap that unlocks does.
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {}
@@ -89,7 +105,9 @@ class CoverActivity : ComponentActivity() {
             val p = prefs ?: return@setContent
             if (mode == MODE_AOD) {
                 AodContent(p.aodLook, p.aodRows, onTap = { leaveAod(p) }) {
-                    CoverState.aodSeenAt = SystemClock.elapsedRealtime()
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        CoverState.aodSeenAt = SystemClock.elapsedRealtime()
+                    }
                 }
             } else {
                 LockContent(p.lockPreset, onUnlock = ::unlock, onAction = ::grubAction)
@@ -122,7 +140,7 @@ class CoverActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        runCatching { unregisterReceiver(unlocked) }
+        runCatching { unregisterReceiver(screen) }
         if (mode == MODE_AOD) CoverState.aodSeenAt = 0L
         super.onDestroy()
     }

@@ -78,7 +78,11 @@ class ScreenService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    // Every startForegroundService call must be answered with startForeground, not just the first.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!startInForeground()) stopSelf()
+        return START_STICKY
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 

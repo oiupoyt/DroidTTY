@@ -63,13 +63,14 @@ fun AodContent(look: AodLook, rows: List<String>, onTap: (() -> Unit)?, onShown:
     }
 
     val d = data ?: return
-    // The clock follows the tick, the rest follows the last read.
-    val shown = d.copy(now = CoverData.at(tick))
+    // The clock follows the tick (to the minute unless it blinks), the rest follows the last read.
+    val shown = d.copy(now = CoverData.at(if (blinks) tick else tick - tick % 60_000L))
     val tap by rememberUpdatedState(onTap)
     CoverView(
         AodFaces.frame(look, shown),
         styled,
-        blinkOn = (tick / 1_000L) % 2L == 0L,
+        // Only the prompt blinks; a constant here spares the other looks a redraw every second.
+        blinkOn = !blinks || (tick / 1_000L) % 2L == 0L,
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(onDoubleTap = { tap?.invoke() }, onTap = { tap?.invoke() }) },
         shift = burnInShift(tick / 60_000L),
         crt = styled.theme.crt.copy(flicker = 0f, grain = 0f),
