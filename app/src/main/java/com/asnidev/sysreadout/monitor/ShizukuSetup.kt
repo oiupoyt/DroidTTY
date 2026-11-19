@@ -8,6 +8,7 @@ enum class SetupItem(val title: String, val detail: String) {
     USAGE("usage access", "screen time, traffic per app, app switches"),
     NOTIFICATIONS("notification access", "notification log and table, what's playing"),
     LOCK("double-tap lock service", "lock the screen with a double-tap on home"),
+    OVERLAY("display over other apps", "always-on display and lock cover"),
 }
 
 /**
@@ -39,6 +40,7 @@ object ShizukuSetup {
     /** Runs the commands for [item]; true when the shell ran them (the caller checks the result). */
     suspend fun apply(item: SetupItem, bridge: ShizukuBridge, pkg: String, userId: Int): Boolean = when (item) {
         SetupItem.USAGE -> bridge.exec("appops set --user $userId $pkg GET_USAGE_STATS allow") != null
+        SetupItem.OVERLAY -> bridge.exec("appops set --user $userId $pkg SYSTEM_ALERT_WINDOW allow") != null
         SetupItem.NOTIFICATIONS -> bridge.exec("cmd notification allow_listener ${listenerComponent(pkg)} $userId") != null
         SetupItem.LOCK -> {
             val current = bridge.exec("settings --user $userId get secure enabled_accessibility_services")

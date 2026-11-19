@@ -5,6 +5,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowShowWallpaper">false</item>
     </style>
+    <!-- Black from the first frame, so the screen doesn't flash before the cover draws. -->
+    <style name="Theme.SysReadout.Cover">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
     <color name="bg">#FF050807</color>
     <color name="icon_fg">#FF3DFF8A</color>
 </resources>

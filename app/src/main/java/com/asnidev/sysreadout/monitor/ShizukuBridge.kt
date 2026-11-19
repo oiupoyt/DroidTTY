@@ -220,12 +220,12 @@ class ShizukuBridge(private val context: Context) {
     private fun startDirect(cmd: Array<String>): RemoteProc? {
         val binder = Shizuku.getBinder() ?: return null
         val remote = IShizukuService.Stub.asInterface(binder).newProcess(cmd, null, null) ?: return null
-        val output = ParcelFileDescriptor.AutoCloseInputStream(remote.inputStream)
+        val stream = ParcelFileDescriptor.AutoCloseInputStream(remote.inputStream)
         return object : RemoteProc {
-            override val output = output
+            override val output = stream
             override fun destroy() {
                 runCatching { remote.destroy() }
-                runCatching { output.close() }
+                runCatching { stream.close() }
             }
         }
     }

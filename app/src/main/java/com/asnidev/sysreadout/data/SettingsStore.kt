@@ -64,6 +64,7 @@ class SettingsStore(private val context: Context) {
         val lockMode = stringPreferencesKey("lock_mode")
         val logLayout = stringPreferencesKey("log_layout")
         val feedTop = booleanPreferencesKey("feed_newest_at_top")
+        val cover = stringPreferencesKey("cover")
     }
 
     val prefs: Flow<LauncherPrefs> = data.map(::read)
@@ -73,6 +74,8 @@ class SettingsStore(private val context: Context) {
     val presets: Flow<List<Preset>> = data.map { presetsFromJson(it[K.presets]) }
 
     val monitor: Flow<MonitorPrefs> = data.map { MonitorPrefs.fromJson(it[K.monitor]) }
+
+    val cover: Flow<CoverPrefs> = data.map { CoverPrefs.fromJson(it[K.cover]) }
 
     suspend fun update(transform: (LauncherPrefs) -> LauncherPrefs) {
         context.dataStore.edit { p -> write(p, transform(read(p))) }
@@ -88,6 +91,10 @@ class SettingsStore(private val context: Context) {
 
     suspend fun updateMonitor(transform: (MonitorPrefs) -> MonitorPrefs) {
         context.dataStore.edit { p -> p[K.monitor] = transform(MonitorPrefs.fromJson(p[K.monitor])).toJson() }
+    }
+
+    suspend fun updateCover(transform: (CoverPrefs) -> CoverPrefs) {
+        context.dataStore.edit { p -> p[K.cover] = transform(CoverPrefs.fromJson(p[K.cover])).toJson() }
     }
 
     private fun readTheme(p: Preferences): Theme =

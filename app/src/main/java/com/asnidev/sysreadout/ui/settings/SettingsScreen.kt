@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.asnidev.sysreadout.LauncherViewModel
+import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.AppKey
+import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.EntryStyle
 import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.LockMode
@@ -52,10 +54,11 @@ sealed interface Page {
     data object About : Page { override val title = "about" }
     data object Crt : Page { override val title = "crt effects" }
     data object Shizuku : Page { override val title = "shizuku" }
+    data object Cover : Page { override val title = "screen" }
 
     companion object {
         /** Top-level pages by name, for `--es page <name>`. */
-        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku)
+        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku, Cover)
             .firstOrNull { it.title.substringBefore(' ') == name.lowercase() }
     }
 }
@@ -89,6 +92,7 @@ fun SettingsScreen(vm: LauncherViewModel) {
                     Page.About -> AboutPage()
                     Page.Crt -> CrtPage(vm)
                     Page.Shizuku -> ShizukuPage(vm)
+                    Page.Cover -> CoverPage(vm)
                 }
             }
         }
@@ -96,6 +100,15 @@ fun SettingsScreen(vm: LauncherViewModel) {
 }
 
 private enum class Picking { LEFT, RIGHT }
+
+/** "aod while charging · lock cover bios flash", or "always-on display · lock cover". */
+private fun coverSummary(c: CoverPrefs): String {
+    val parts = listOfNotNull(
+        c.aodMode.takeIf { it != AodMode.OFF }?.let { "aod ${it.title()}" },
+        c.lockPreset.takeIf { c.lockCover }?.let { "cover ${it.title()}" },
+    )
+    return parts.joinToString(" · ").ifEmpty { "always-on display · lock cover" }
+}
 
 @Composable
 private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
@@ -105,6 +118,7 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     val monitor by vm.monitor.collectAsState()
     val shizuku by vm.shizuku.state.collectAsState()
     val safe by vm.safeMode.collectAsState()
+    val cover by vm.cover.collectAsState()
     var picking by remember { mutableStateOf<Picking?>(null) }
 
     fun appName(key: AppKey?): String =
@@ -128,6 +142,7 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     Link("appearance", "fonts · colours · presets ›") { open(Page.Appearance) }
     Link("log", "${prefs.logRows.size} rows ›") { open(Page.Log) }
     Link("shizuku", (if (monitor.shizuku) shizuku.label else "off · optional") + " ›") { open(Page.Shizuku) }
+    Link("screen", coverSummary(cover) + " ›") { open(Page.Cover) }
 
     Section("home")
     Toggle("clock", prefs.showClock) { v -> vm.update { it.copy(showClock = v) } }

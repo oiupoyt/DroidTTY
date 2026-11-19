@@ -3,6 +3,7 @@ package com.asnidev.sysreadout.log
 import android.content.Context
 import android.util.Log
 import com.asnidev.sysreadout.apps.AppEntry
+import com.asnidev.sysreadout.cover.CoverState
 import com.asnidev.sysreadout.data.LauncherPrefs
 import com.asnidev.sysreadout.data.LogLayout
 import com.asnidev.sysreadout.data.MonitorPrefs
@@ -33,6 +34,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** One line of the feed layout; [key] identifies what it describes, [time] is set for events. */
@@ -741,6 +745,7 @@ class LogEngine(
         val tables = listOfNotNull(procTable, connTable, wakeTable, batteryTable, screenTable, trafficTable, notifTable)
         updateFeed(tables)
         _frame.value = LogFrame(banner, pinned, tables, stream.toList(), feed.rows.toList())
+        CoverState.events = stream.takeLast(AOD_EVENTS).map { "${hhmm(it.time)} ${it.text}" }
     }
 
     private fun updateFeed(tables: List<LogTable>) {
@@ -755,6 +760,8 @@ class LogEngine(
         feed.update(live, stream, feedTopOverride ?: prefs.value.feedNewestAtTop, feedCapacity, prefs.value.showStream)
     }
 
+    private fun hhmm(t: Long): String = HHMM.format(Instant.ofEpochMilli(t).atZone(ZoneId.systemDefault()))
+
     private fun item(key: String, tag: String, text: String) = FeedItem(key, tag.padEnd(ProbeReader.KEY_WIDTH) + text)
 
     private fun duration(ms: Long): String {
@@ -766,6 +773,9 @@ class LogEngine(
         private const val TAG = "LogEngine"
         private val NET_PROTOS = listOf("tcp", "tcp6", "udp", "udp6")
         private const val STREAM_MAX = 300
+        /** Stream lines kept for the always-on display's log-tail look. */
+        private const val AOD_EVENTS = 12
+        private val HHMM = DateTimeFormatter.ofPattern("HH:mm", Locale.US)
         private const val SHELL_UID = 2000
         private const val DNS_REPEAT_MS = 5 * 60_000L
         private const val LOGCAT_REPEAT_MS = 60_000L

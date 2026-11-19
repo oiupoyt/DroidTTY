@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.graphics.Bitmap
 import androidx.core.content.ContextCompat
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -18,6 +19,8 @@ import androidx.lifecycle.viewModelScope
 import com.asnidev.sysreadout.apps.AppEntry
 import com.asnidev.sysreadout.apps.AppRepository
 import com.asnidev.sysreadout.data.AppKey
+import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.cover.ScreenService
 import com.asnidev.sysreadout.data.EntryStyle
 import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.VAlign
@@ -120,6 +123,8 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
     val monitor: StateFlow<MonitorPrefs> =
         combine(store.monitor, homePreview) { m, preview -> preview.applyTo(m) }
             .stateIn(scope, SharingStarted.Eagerly, MonitorPrefs())
+    val cover: StateFlow<CoverPrefs> =
+        store.cover.stateIn(scope, SharingStarted.Eagerly, CoverPrefs())
 
     /** Completed once the saved settings have reached [prefs] and [monitor] (they start as defaults). */
     private val settingsLoaded = CompletableDeferred<Unit>()
@@ -182,6 +187,19 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
                 .collect { shizuku.setEnabled(it) }
         }
         restoreDnsMonitor()
+        // The screen service runs exactly while the always-on display or lock cover is on.
+        scope.launch {
+            combine(store.cover, safeMode) { c, safe -> c to safe }
+                .distinctUntilChanged()
+                .collect { (c, safe) -> ScreenService.sync(getApplication(), c, safe) }
+        }
+    }
+
+    /** Restarts the screen service if Android stopped it; called whenever home comes back. */
+    fun ensureScreenService() = ScreenService.sync(getApplication(), cover.value, safeMode.value)
+
+    fun updateCover(transform: (CoverPrefs) -> CoverPrefs) {
+        scope.launch { store.updateCover(transform) }
     }
 
     /** Brings the DNS monitor back after the launcher restarts, if the user left it on. */
@@ -199,6 +217,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         SetupItem.USAGE -> engine.usage.hasAccess()
         SetupItem.NOTIFICATIONS -> NotifLog.connected
         SetupItem.LOCK -> LockService.isRunning
+        SetupItem.OVERLAY -> Settings.canDrawOverlays(getApplication())
     }
 
     /**

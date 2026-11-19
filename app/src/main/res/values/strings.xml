@@ -3,4 +3,5 @@
     <string name="lock_service_label">SysReadout: double-tap to lock</string>
     <string name="lock_service_desc">Lets SysReadout lock the screen when you double-tap an empty part of the home screen. It does not read screen content or anything you type.</string>
     <string name="notif_listener_label">SysReadout notification log</string>
+    <string name="aod_dream_label">SysReadout always-on display</string>
 </resources>
