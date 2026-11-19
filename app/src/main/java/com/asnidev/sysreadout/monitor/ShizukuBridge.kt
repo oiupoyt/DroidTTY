@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
 import android.os.RemoteException
 import android.os.SystemClock
 import android.util.Log
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 import rikka.sui.Sui
 import java.util.concurrent.atomic.AtomicInteger
@@ -67,6 +69,9 @@ enum class ShizukuState(val label: String) {
  * that keeps failing is left alone for a while (30 s, doubling up to 5 min)
  * instead of being retried in a tight loop. While switched off with
  * [setEnabled] no Shizuku code runs at all.
+ *
+ * When the helper can't start (some Android 16 ROMs), commands run through
+ * Shizuku's own server process instead ([RemoteShell], "direct shell").
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShizukuBridge(private val context: Context) {
@@ -80,6 +85,14 @@ class ShizukuBridge(private val context: Context) {
 
     @Volatile private var enabled = false
     @Volatile private var service: IShellService? = null
+    /** The direct-shell stand-in for [service]; set only while the helper isn't connected. */
+    @Volatile private var direct: IShellService? = null
+
+    /** Connected through Shizuku's server rather than SysReadout's helper (no reverse DNS). */
+    val isDirect: Boolean get() = service == null && direct != null
+
+    /** Reverse DNS needs the helper; the direct shell doesn't offer it. */
+    val canResolve: Boolean get() = service != null
 
     // State changes happen one at a time on this worker; the helper's blocking calls run on IO.
     private val worker = Dispatchers.IO.limitedParallelism(1)
@@ -91,9 +104,13 @@ class ShizukuBridge(private val context: Context) {
     private var bindingSince = 0L
     private var failedBinds = 0
     private var pauses = 0
+    /** Since when the helper has been wanted and hasn't connected; 0 while not waiting. */
+    private var waitingSince = 0L
 
     @Volatile private var pausedUntil = 0L
+    @Volatile private var directPausedUntil = 0L
     private val failures = AtomicInteger()
+    private val directFailures = AtomicInteger()
     private val permits = Semaphore(MAX_CALLS)
 
     private val args = Shizuku.UserServiceArgs(ComponentName(context.packageName, ShellService::class.java.name))
@@ -133,7 +150,10 @@ class ShizukuBridge(private val context: Context) {
             safely { Shizuku.removeBinderReceivedListener(onBinder) }
             safely { Shizuku.removeBinderDeadListener(onDead) }
             safely { Shizuku.removeRequestPermissionResultListener(onPermission) }
-            scope.launch(worker) { release() }
+            scope.launch(worker) {
+                direct = null
+                release()
+            }
         }
         refresh()
     }
@@ -151,6 +171,9 @@ class ShizukuBridge(private val context: Context) {
             pausedUntil = 0L
             pauses = 0
             failedBinds = 0
+            waitingSince = 0L
+            direct = null
+            directPausedUntil = 0L
             release()
             recompute()
         }
@@ -172,9 +195,39 @@ class ShizukuBridge(private val context: Context) {
         // isBinderAlive is a local check: a ping would hang here if the helper does.
         val connected = service?.let { s -> safely { s.asBinder().isBinderAlive } } == true
         if (!connected) service = null
-        val failing = SystemClock.elapsedRealtime() < pausedUntil
-        if (permitted && !connected && !failing) bind()
-        _state.value = ShizukuState.of(enabled, running, installed, preV11, permitted, connected, failing)
+        val now = SystemClock.elapsedRealtime()
+        val failing = now < pausedUntil
+        waitingSince = if (!permitted || connected) 0L else waitingSince.takeIf { it != 0L } ?: now
+        if (!permitted || connected) direct = null
+        if (direct == null && ShizukuRoute.useDirect(
+                permitted, connected,
+                helperWaitingMs = if (waitingSince == 0L) null else now - waitingSince,
+                helperPaused = failing,
+                directPaused = now < directPausedUntil,
+            )
+        ) {
+            Log.i(TAG, "helper didn't connect; using shizuku's server shell")
+            direct = DirectShellService(RemoteShell(::startDirect))
+            directFailures.set(0)
+        }
+        // Once the direct shell works, stop starting helpers that crash anyway; "retry now" tries again.
+        if (permitted && !connected && !failing && direct == null) bind()
+        val usable = connected || direct != null
+        _state.value = ShizukuState.of(enabled, running, installed, preV11, permitted, usable, failing && !usable)
+    }
+
+    /** A process run by Shizuku's server (shell uid), the way `rish` does it. */
+    private fun startDirect(cmd: Array<String>): RemoteProc? {
+        val binder = Shizuku.getBinder() ?: return null
+        val remote = IShizukuService.Stub.asInterface(binder).newProcess(cmd, null, null) ?: return null
+        val output = ParcelFileDescriptor.AutoCloseInputStream(remote.inputStream)
+        return object : RemoteProc {
+            override val output = output
+            override fun destroy() {
+                runCatching { remote.destroy() }
+                runCatching { output.close() }
+            }
+        }
     }
 
     private fun bind() {
@@ -248,7 +301,7 @@ class ShizukuBridge(private val context: Context) {
     }
 
     /** Connected and usable right now. */
-    val ready: Boolean get() = service != null && _state.value == ShizukuState.READY
+    val ready: Boolean get() = (service != null || direct != null) && _state.value == ShizukuState.READY
 
     /** Output of `sh -c command` as the shell user; null when it failed or Shizuku isn't ready. */
     suspend fun exec(command: String, timeoutMs: Long = 5_000): String? =
@@ -268,8 +321,10 @@ class ShizukuBridge(private val context: Context) {
      * flight, so hung calls can't pile up threads either.
      */
     private suspend fun <T> call(timeoutMs: Long, block: (IShellService) -> T?): T? {
-        val s = service ?: return null
-        if (SystemClock.elapsedRealtime() < pausedUntil) return null
+        val helper = service
+        val s = helper ?: direct ?: return null
+        val viaDirect = helper == null
+        if (!viaDirect && SystemClock.elapsedRealtime() < pausedUntil) return null
         if (!permits.tryAcquire()) {
             callFailed(IllegalStateException("helper calls are stuck"))
             return null
@@ -279,14 +334,39 @@ class ShizukuBridge(private val context: Context) {
         return try {
             val result = withTimeoutOrNull(timeoutMs) { job.await() }
             // A null that did come back is the helper saying "that command failed", not a broken link.
-            if (result != null || job.isCompleted) failures.set(0) else callFailed(IllegalStateException("timed out"))
+            if (result != null || job.isCompleted) {
+                (if (viaDirect) directFailures else failures).set(0)
+            } else if (viaDirect) {
+                directCallFailed(IllegalStateException("timed out"))
+            } else {
+                callFailed(IllegalStateException("timed out"))
+            }
             result
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) { // DeadObjectException, RemoteException, anything the binder throws
-            if (e is RemoteException) service = null
-            callFailed(e)
+            if (viaDirect) {
+                directCallFailed(e)
+            } else {
+                if (e is RemoteException) service = null
+                callFailed(e)
+            }
             null
+        }
+    }
+
+    /** Repeated failures drop the direct shell for a while; the helper gets its turn again meanwhile. */
+    private fun directCallFailed(e: Exception) {
+        Log.w(TAG, "shizuku direct shell call failed: $e")
+        if (directFailures.incrementAndGet() >= MAX_FAILURES) {
+            scope.launch(worker) {
+                direct = null
+                directFailures.set(0)
+                directPausedUntil = SystemClock.elapsedRealtime() + FIRST_PAUSE_MS
+                recompute()
+            }
+        } else {
+            refresh()
         }
     }
 

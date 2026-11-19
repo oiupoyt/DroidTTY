@@ -88,6 +88,14 @@ fun ShizukuPage(vm: LauncherViewModel) {
             Note("tap allow, then choose \"allow all the time\" in shizuku's dialog.")
         running && vm.shizuku.isSui -> Note("running through sui (root): nothing to start after a reboot.")
     }
+    if (state == ShizukuState.READY && vm.shizuku.isDirect) {
+        Note(
+            "connected through shizuku's own shell: sysreadout's helper couldn't start on this phone " +
+                "(a known problem on some android 16 roms). everything works except server names from " +
+                "reverse dns; names the dns monitor sees still show. \"retry helper\" tries the helper again.",
+        )
+        Link("retry helper", "›") { vm.shizuku.restartHelper() }
+    }
 
     if (!running) {
         Section("start shizuku")

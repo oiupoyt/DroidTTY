@@ -233,7 +233,10 @@ class LogEngine(
         lastShizuku = now
         if (was == null || was == now) return
         when {
-            now == ShizukuState.READY -> emit("shizk", "connected" + if (shizuku.isSui) " through sui" else "")
+            now == ShizukuState.READY -> emit(
+                "shizk",
+                "connected" + (if (shizuku.isSui) " through sui" else "") + if (shizuku.isDirect) " · direct shell" else "",
+            )
             was == ShizukuState.READY -> emit("shizk", "${now.label} · processes and connections paused")
         }
     }
@@ -379,7 +382,7 @@ class LogEngine(
         val fresh = if (was == null || !m.evConns) emptyList() else socks.filter { (it.uid to it.remote) !in was }
 
         // Names the DNS monitor saw beat reverse DNS; only look up what it didn't.
-        val unknown = if (!m.resolveHosts) emptyList() else socks.map { it.remoteIp }.distinct()
+        val unknown = if (!m.resolveHosts || !shizuku.canResolve) emptyList() else socks.map { it.remoteIp }.distinct()
             .filter { DnsLog.host(it) == null && it !in ptr && it !in unresolvable && it !in resolving }.take(32)
         if (unknown.isEmpty()) {
             fresh.forEach { emit("conn", connLine(it)) }
