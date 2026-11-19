@@ -13,7 +13,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.provider.MediaStore
-import android.telecom.TelecomManager
 import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -174,13 +173,9 @@ class CoverActivity : ComponentActivity() {
             LockPresets.ACTION_CAMERA -> {
                 if (SystemActions.open(this, Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE))) finish()
             }
+            // The emergency dialer's own action; phones without it fall back to the dialer.
             LockPresets.ACTION_EMERGENCY -> {
-                val dialer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    getSystemService(TelecomManager::class.java).createLaunchEmergencyDialerIntent(null)
-                } else {
-                    Intent("com.android.phone.EmergencyDialer.DIAL")
-                }
-                if (SystemActions.open(this, dialer)) finish()
+                if (SystemActions.open(this, Intent(EMERGENCY_DIAL)) || SystemActions.open(this, Intent(Intent.ACTION_DIAL))) finish()
             }
         }
     }
@@ -189,6 +184,7 @@ class CoverActivity : ComponentActivity() {
         const val EXTRA_MODE = "mode"
         const val MODE_AOD = "aod"
         const val MODE_LOCK = "lock"
+        private const val EMERGENCY_DIAL = "com.android.phone.EmergencyDialer.DIAL"
 
         /** Low enough to be easy on the battery, high enough to read indoors. */
         private const val AOD_BRIGHTNESS = 0.02f
