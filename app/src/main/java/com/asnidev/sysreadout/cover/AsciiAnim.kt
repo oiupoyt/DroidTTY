@@ -21,6 +21,7 @@ object AsciiAnim {
 
     /** Frames per second each look is drawn at; the battery cost follows. */
     const val FPS = 10
+    private const val LIFE_STEP_MS = 200L
 
     /** Density ramp, dark to bright. */
     private const val RAMP = " .:-=+*#%@"
@@ -61,9 +62,9 @@ object AsciiAnim {
         return withClock(rows, d)
     }
 
-    /** Conway's Life from a fixed seed; the hour (in live cells) is planted and re-seeded every minute. */
+    /** Conway's Life from a seed that changes every minute, five generations a second. */
     fun life(d: CoverData, ms: Long): CoverFrame {
-        val gen = ((ms / 1000L) % 60L) * 2 + (ms % 1000L) / 500L
+        val gen = (ms % 60_000L) / LIFE_STEP_MS
         var grid = Array(H) { y -> BooleanArray(W) { x -> hash(x + y * W, d.now.minute + 7) > 0.68 } }
         repeat(gen.toInt()) { grid = step(grid) }
         val rows = Array(H) { y -> CharArray(W) { x -> if (grid[y][x]) 'o' else ' ' } }
@@ -199,7 +200,8 @@ object AsciiAnim {
             rows[0][x] = '-'
             rows[H - 1][x] = '-'
         }
-        for (y in 1 until H - 1) if (y % 2 == 0) rows[y][W / 2] = ':'
+        // The net, left out of the score's row so the score reads whole.
+        for (y in 1 until H - 1) if (y % 2 == 0 && y != 2) rows[y][W / 2] = ':'
         val left = (by - 1.5).roundToInt().coerceIn(1, H - 5)
         val right = (by - 1.5 + sin(t * 2) * 1.2).roundToInt().coerceIn(1, H - 5)
         for (k in 0 until 4) {
@@ -208,7 +210,7 @@ object AsciiAnim {
         }
         put(rows, bx.roundToInt().coerceIn(2, W - 3), by.roundToInt().coerceIn(1, H - 2), 'o')
         val score = String.format(Locale.US, "%02d   %02d", if (d.is24h) d.now.hour else (d.now.hour + 11) % 12 + 1, d.now.minute)
-        score.forEachIndexed { i, c -> if (c != ' ') put(rows, W / 2 - score.length / 2 + i, 2, c) }
+        score.forEachIndexed { i, c -> put(rows, W / 2 - score.length / 2 + i, 2, c) }
         return CoverFrame(rows.map { CoverLine(String(it)) } + listOf(CoverLine(d.date, Role.DIM, LineAlign.CENTER)), centered = true)
     }
 

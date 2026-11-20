@@ -158,7 +158,8 @@ class CoverFacesTest {
                 assertFalse("$p invents $word", text.contains(word))
             }
         }
-        AodLook.entries.filter { it != AodLook.MATRIX }.forEach { look ->
+        // Animated looks shade with '%' and '#' as density, so only the looks that show data are read for values.
+        AodLook.entries.filter { !it.animated }.forEach { look ->
             val text = AodFaces.frame(look, bare).lines.joinToString("\n") { it.mark + it.text }
             assertFalse("$look invents a battery level", text.contains("%"))
             listOf("Memory", "Mem[", "Bat[", "Uptime", "Packages").forEach { word ->
@@ -461,6 +462,15 @@ class AnimatedLooksTest {
     fun animatedLooksRedrawAtTheirRate() {
         animated.forEach { assertEquals(100L, AodFaces.refreshMs(it)) }
         assertEquals(60_000L, AodFaces.refreshMs(AodLook.CLOCK))
+    }
+
+    @Test
+    fun animatedLooksShowNoDataTheyDontHave() {
+        val bare = d.copy(battery = null)
+        animated.forEach { look ->
+            val text = AodFaces.frame(look, bare, 5_000).lines.filter { it.role != Role.DIM }.joinToString("\n") { it.text }
+            assertFalse("$look shows a battery level", Regex("\\d+%").containsMatchIn(text))
+        }
     }
 
     @Test
