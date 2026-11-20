@@ -1,6 +1,9 @@
 package com.asnidev.sysreadout.shade
 
+import android.Manifest
 import android.app.NotificationManager
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
@@ -59,7 +62,7 @@ class Toggles(private val context: Context, private val shizukuOf: () -> Shizuku
         when (t) {
             Toggle.WIFI -> context.applicationContext.getSystemService(WifiManager::class.java).isWifiEnabled
             Toggle.BLUETOOTH -> context.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled
-            Toggle.DATA -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.getSystemService(TelephonyManager::class.java).isDataEnabled else null
+            Toggle.DATA -> dataEnabled()
             Toggle.AIRPLANE -> Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1
             Toggle.LOCATION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) context.getSystemService(LocationManager::class.java).isLocationEnabled else null
             Toggle.DND -> context.getSystemService(NotificationManager::class.java).currentInterruptionFilter > NotificationManager.INTERRUPTION_FILTER_ALL
@@ -67,6 +70,12 @@ class Toggles(private val context: Context, private val shizukuOf: () -> Shizuku
             Toggle.ROTATE -> Settings.System.getInt(context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1
         }
     }.getOrNull()
+
+    /** Reading it needs the phone permission (the link row asks for it); unknown without. */
+    private fun dataEnabled(): Boolean? {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+        return if (granted) context.getSystemService(TelephonyManager::class.java).isDataEnabled else null
+    }
 
     /** Shell commands that flip [t] to [on]; null where Android has none. */
     fun command(t: Toggle, on: Boolean): String? = when (t) {

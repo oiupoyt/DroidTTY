@@ -88,9 +88,14 @@ fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShad
         if (pi == null) return
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val opts = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED,
-                )
+                // The shade is a visible window when tapped, which is what this mode asks for.
+                val mode = if (Build.VERSION.SDK_INT >= 36) {
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE
+                } else {
+                    @Suppress("DEPRECATION")
+                    ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                }
+                val opts = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(mode)
                 pi.send(context, 0, null, null, null, null, opts.toBundle())
             } else {
                 pi.send()
