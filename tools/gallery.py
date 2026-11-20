@@ -130,7 +130,10 @@ def write(kind, name, item):
     frames = item["frames"]
     os.makedirs(os.path.join(OUT, kind), exist_ok=True)
     layout = fit(frames)
-    still = render(frames[-1] if kind == "lock" else frames[0], layout)
+    still_frame = frames[-1] if kind == "lock" else frames[0]
+    # The still is sized by its own frame, so a short final screen isn't drawn at the size
+    # the longest boot frame needed; GIFs keep one layout for all frames so nothing jitters.
+    still = render(still_frame, fit([still_frame]))
     still.save(os.path.join(OUT, kind, f"{slug}.png"), optimize=True)
     if len(frames) > 1:
         images = [render(f, layout).convert("P", palette=Image.ADAPTIVE, colors=32) for f in frames]
