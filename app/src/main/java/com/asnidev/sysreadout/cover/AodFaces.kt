@@ -119,9 +119,10 @@ object AodFaces {
         } else {
             d.coreLoad.forEachIndexed { i, load -> lines += CoverLine(meter(String.format(Locale.US, "%2d", i), load, pct(load))) }
         }
-        if (d.memUsedMb != null && d.memTotalMb != null && d.memTotalMb > 0) {
-            val f = d.memUsedMb.toDouble() / d.memTotalMb
-            lines += CoverLine(meter("Mem", f, String.format(Locale.US, "%.1fG/%.1fG", d.memUsedMb / 1024.0, d.memTotalMb / 1024.0)))
+        val used = d.memUsedMb
+        val total = d.memTotalMb
+        if (used != null && total != null && total > 0) {
+            lines += CoverLine(meter("Mem", used.toDouble() / total, String.format(Locale.US, "%.1fG/%.1fG", used / 1024.0, total / 1024.0)))
         }
         d.battery?.let { lines += CoverLine(meter("Bat", it / 100.0, "$it%")) }
         d.uptimeText?.let {
