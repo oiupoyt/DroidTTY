@@ -72,16 +72,25 @@ jobs:
           VNAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "vname=$VNAME" >> "$GITHUB_OUTPUT"
           mkdir -p release-artifacts
-          # The asset name must stay exactly SysReadout-Launcher.apk: .fdroid.yml
-          # Binaries and the README link point at it.
-          cp "$APK" release-artifacts/SysReadout-Launcher.apk
+          # The README's install link points at this name.
+          cp "$APK" release-artifacts/DroidTTY.apk
 
       - name: Publish rolling 'latest' release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest release-artifacts/SysReadout-Launcher.apk \
+          printf '%s\n' "Rolling build of \`main\`, replaced on every push. Stable versions are the vX.Y.Z releases." \
+            "Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/latest/DroidTTY.apk" > latest-notes.md
+          gh release create latest release-artifacts/DroidTTY.apk \
             --prerelease \
             --title "Latest build (${{ steps.stage.outputs.vname }})" \
-            --notes "Rolling build of \`main\`, replaced on every push. Stable versions are the vX.Y.Z releases. Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/latest/SysReadout-Launcher.apk"
+            --notes-file latest-notes.md
+
+      # Skipped quietly without the FORGEJO_TOKEN secret (forks of this fork).
+      - name: Mirror to Forgejo
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          if [ -z "$FORGEJO_TOKEN" ]; then echo "no FORGEJO_TOKEN; not mirroring"; exit 0; fi
+          tools/forgejo-release.sh latest "Latest build (${{ steps.stage.outputs.vname }})" latest-notes.md release-artifacts/DroidTTY.apk true

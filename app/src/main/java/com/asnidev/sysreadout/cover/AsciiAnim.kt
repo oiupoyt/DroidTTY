@@ -93,8 +93,9 @@ object AsciiAnim {
             val z1 = x * sin(a) + z * cos(a)
             val y1 = y * cos(b) - z1 * sin(b)
             val z2 = y * sin(b) + z1 * cos(b)
-            val k = 7.5 / (4 + z2)
-            Pair(W / 2.0 + x1 * k * 1.9, H / 2.0 - 1 + y1 * k)
+            // Perspective sized so the turning cube fills most of the grid; characters are about twice as tall as wide.
+            val k = 18.0 / (3.2 + z2)
+            Pair(W / 2.0 + x1 * k * 1.15, H / 2.0 + y1 * k * 0.62)
         }
         for (i in verts.indices) for (j in i + 1 until verts.size) {
             val (a1, b1, c1) = verts[i]

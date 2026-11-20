@@ -95,9 +95,7 @@ jobs:
           VNAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "vname=$VNAME" >> "$GITHUB_OUTPUT"
           mkdir -p release-artifacts
-          # The asset name must stay exactly SysReadout-Launcher.apk: .fdroid.yml
-          # Binaries and the README link point at it.
-          cp "$APK" release-artifacts/SysReadout-Launcher.apk
+          cp "$APK" release-artifacts/DroidTTY.apk
 
       - name: Publish versioned release
         env:
@@ -108,10 +106,18 @@ jobs:
           NOTES="metadata/en-US/changelogs/$VCODE.txt"
           {
             [ -f "$NOTES" ] && cat "$NOTES" && echo
-            echo "Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG/SysReadout-Launcher.apk"
+            echo "Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG/DroidTTY.apk"
             echo
-            echo "Signing certificate SHA-256: 03873cc1869db581465c718d15b58d7f80999dec058ff21617b58267760a91bb"
+            echo "Signing certificate SHA-256: 39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58ac277e8"
           } > release-notes.md
-          gh release create "$TAG" release-artifacts/SysReadout-Launcher.apk \
-            --title "SysReadout Launcher ${{ steps.stage.outputs.vname }}" \
+          gh release create "$TAG" release-artifacts/DroidTTY.apk \
+            --title "DroidTTY ${{ steps.stage.outputs.vname }}" \
             --notes-file release-notes.md
+
+      # Skipped quietly without the FORGEJO_TOKEN secret (forks of this fork).
+      - name: Mirror to Forgejo
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          if [ -z "$FORGEJO_TOKEN" ]; then echo "no FORGEJO_TOKEN; not mirroring"; exit 0; fi
+          tools/forgejo-release.sh "${{ inputs.tag || github.ref_name }}" "DroidTTY ${{ steps.stage.outputs.vname }}" release-notes.md release-artifacts/DroidTTY.apk

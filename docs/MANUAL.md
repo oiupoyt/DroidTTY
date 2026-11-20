@@ -1,6 +1,6 @@
-# SysReadout Launcher — user manual
+# DroidTTY: user manual
 
-SysReadout Launcher (SRL) is a home screen: a short list of your apps in front of a live, terminal-style readout of what the phone is doing. This manual covers everything in the app, from setting it as your home screen to the system monitor.
+DroidTTY, a fork of SysReadout Launcher, is a home screen: a short list of your apps in front of a live, terminal-style readout of what the phone is doing. This manual covers everything in the app, from setting it as your home screen to the system monitor.
 
 - [1. Make it your home screen](#1-make-it-your-home-screen)
 - [2. The home screen](#2-the-home-screen)
@@ -16,7 +16,7 @@ SysReadout Launcher (SRL) is a home screen: a short list of your apps in front o
 
 ## 1. Make it your home screen
 
-After installing, open **Settings › Apps › Default apps › Home app** and choose **SysReadout**. (The exact path differs a little between phone makers; searching settings for "home app" finds it.) Until then you can also open SysReadout from your current launcher to try it.
+After installing, open **Settings › Apps › Default apps › Home app** and choose **DroidTTY**. (The exact path differs a little between phone makers; searching settings for "home app" finds it.) Until then you can also open DroidTTY from your current launcher to try it.
 
 To go back, pick your previous launcher in the same place.
 
@@ -35,7 +35,7 @@ The home screen has three layers: the **log** in the background, an optional **c
 
 **Menu entries.** Pin apps from the drawer (long-press an app › *pin to home*). Entries are separate text blocks; you can add as many as fit the free height of the screen, and the drawer tells you when there's no room left. Long-press an entry to rename it, move it up or down, remove it, or open its app info.
 
-**Double-tap to lock** uses a small accessibility service whose only job is to lock the screen; it reads no screen content. Switching the option on takes you to Android's accessibility settings to enable *SysReadout: double-tap to lock*.
+**Double-tap to lock** uses a small accessibility service whose only job is to lock the screen; it reads no screen content. Switching the option on takes you to Android's accessibility settings to enable *DroidTTY: double-tap to lock*.
 
 ## 3. The app drawer
 
@@ -114,7 +114,7 @@ Rows that stay in place and update every few seconds. Under log › *pinned rows
 | `kern` | kernel release | — | yes |
 | `props` | A/B slot, verified boot, bootloader lock, treble, first API, build type | — |  |
 | `dev` | manufacturer, model, codename | — |  |
-| `self` | SysReadout's own process: pid, memory, threads | — |  |
+| `self` | DroidTTY's own process: pid, memory, threads | — |  |
 | `cpu` | online cores, current clock range, governor | — | yes |
 | `cores` | clock of every CPU core; with Shizuku, its load in percent | — |  |
 | `load` | load average and process count | Shizuku |  |
@@ -187,7 +187,7 @@ Settings › log › system monitor › *usage access*. Unlocks: screen-time and
 
 ### Shizuku
 
-[Shizuku](https://shizuku.rikka.app/) is a free app that lends SysReadout the access of `adb shell`, only while you allow it. It is optional and off until you switch it on under **settings › shizuku**; everything else in SysReadout works without it. With it, the log also shows:
+[Shizuku](https://shizuku.rikka.app/) is a free app that lends DroidTTY the access of `adb shell`, only while you allow it. It is optional and off until you switch it on under **settings › shizuku**; everything else in DroidTTY works without it. With it, the log also shows:
 
 - **processes** sorted by CPU or memory (`top`), with real app names
 - **connections**: every open TCP/UDP connection per app, with the server's name
@@ -200,16 +200,16 @@ Settings › log › system monitor › *usage access*. Unlocks: screen-time and
 
 1. Install Shizuku (from GitHub, IzzyOnDroid or Google Play).
 2. Start it. On Android 11 and newer no computer is needed: turn on developer options (Settings › About phone › tap *Build number* 7 times), connect to Wi-Fi and switch on *Wireless debugging*. In Shizuku tap *Pairing*, then in Wireless debugging tap *Pair device with pairing code* and type the code into Shizuku's notification. Pairing is done once; after that tap *Start*. On Android 10 and older Shizuku is started from a computer with `adb`. On a rooted phone Shizuku starts itself, or use Sui instead.
-3. Allow SysReadout when Shizuku asks (*allow all the time*).
-4. SysReadout connects by itself.
+3. Allow DroidTTY when Shizuku asks (*allow all the time*).
+4. DroidTTY connects by itself.
 
-**After a reboot.** Without root, Android stops Shizuku at every reboot. On Android 13 and newer, switch on *Start on boot* in Shizuku's settings: it restarts itself over wireless debugging whenever the phone is on a Wi-Fi where you chose *Always allow on this network*. SysReadout notices when Shizuku comes back and reconnects. While Shizuku is away, one `shizk` row in the log says why instead of the tables.
+**After a reboot.** Without root, Android stops Shizuku at every reboot. On Android 13 and newer, switch on *Start on boot* in Shizuku's settings: it restarts itself over wireless debugging whenever the phone is on a Wi-Fi where you chose *Always allow on this network*. DroidTTY notices when Shizuku comes back and reconnects. While Shizuku is away, one `shizk` row in the log says why instead of the tables.
 
-**Direct shell.** On some Android 16 phones Shizuku can't start SysReadout's helper process, even though Shizuku itself runs and other apps connect. Step 4 then stays at *connecting*. After 8 seconds SysReadout runs its commands through Shizuku's own shell instead, the way Shizuku's `rish` does, and the page says *connected through shizuku's own shell*. Everything works except server names from reverse DNS; names the DNS monitor sees still show. *Retry helper* tries the helper again.
+**Direct shell.** On some Android 16 phones Shizuku can't start DroidTTY's helper process, even though Shizuku itself runs and other apps connect. Step 4 then stays at *connecting*. After 8 seconds DroidTTY runs its commands through Shizuku's own shell instead, the way Shizuku's `rish` does, and the page says *connected through shizuku's own shell*. Everything works except server names from reverse DNS; names the DNS monitor sees still show. *Retry helper* tries the helper again.
 
-**One-tap setup.** Once Shizuku is connected, *set up access with shizuku* can switch on SysReadout's other access for you: usage access, notification access, the double-tap lock service and *display over other apps* (for the always-on display and lock cover), the same switches you would flip in Android's settings. It lists what it will change and does nothing until you tap *switch on*. Those grants stay after Shizuku stops.
+**One-tap setup.** Once Shizuku is connected, *set up access with shizuku* can switch on DroidTTY's other access for you: usage access, notification access, the double-tap lock service and *display over other apps* (for the always-on display and lock cover), the same switches you would flip in Android's settings. It lists what it will change and does nothing until you tap *switch on*. Those grants stay after Shizuku stops.
 
-**If it misbehaves.** SysReadout never lets Shizuku hold up the home screen: every call is time-limited, a failed read keeps the last values instead of reporting everything gone, and a helper that keeps failing is left alone for a while (the `shizk` row says so) before SysReadout tries again. Switching *use shizuku* off stops all of it.
+**If it misbehaves.** DroidTTY never lets Shizuku hold up the home screen: every call is time-limited, a failed read keeps the last values instead of reporting everything gone, and a helper that keeps failing is left alone for a while (the `shizk` row says so) before DroidTTY tries again. Switching *use shizuku* off stops all of it.
 
 Server names come from reverse DNS by default (*hostnames (reverse dns)*), which often gives provider names such as `…1e100.net` (Google). The DNS monitor gives the names apps actually asked for.
 
@@ -217,7 +217,7 @@ Server names come from reverse DNS by default (*hostnames (reverse dns)*), which
 
 Settings › log › *dns monitor*. It shows which app looks up which server (`Gmail → imap.gmail.com`), and gives the connections table real host names.
 
-How it works: SysReadout starts a VPN that carries **only DNS**. Android sends apps' lookups to a resolver address inside it; each lookup is noted (app, name, returned addresses) and passed on unchanged to your network's normal DNS server. If the network names no DNS server (offline), the lookup goes unanswered, as it would without the monitor; there is no public fallback resolver. No other traffic goes through it, and nothing is sent anywhere else. This is the only feature that uses the internet permission.
+How it works: DroidTTY starts a VPN that carries **only DNS**. Android sends apps' lookups to a resolver address inside it; each lookup is noted (app, name, returned addresses) and passed on unchanged to your network's normal DNS server. If the network names no DNS server (offline), the lookup goes unanswered, as it would without the monitor; there is no public fallback resolver. No other traffic goes through it, and nothing is sent anywhere else. This is the only feature that uses the internet permission.
 
 Limits:
 
@@ -247,19 +247,19 @@ Appearance › *crt effects*: glow, scanlines, vignette, curvature and colour fr
 
 Settings › *lock screen*:
 
-- **leave alone** (default): SysReadout doesn't touch your lock-screen wallpaper.
+- **leave alone** (default): DroidTTY doesn't touch your lock-screen wallpaper.
 - **your image**: pick a picture for the lock screen only.
-- **log snapshot**: each time the screen turns off (at most once a minute), SysReadout draws the log, with your theme and CRT effects, as the lock-screen wallpaper. *Update now* redraws it immediately.
+- **log snapshot**: each time the screen turns off (at most once a minute), DroidTTY draws the log, with your theme and CRT effects, as the lock-screen wallpaper. *Update now* redraws it immediately.
 
-Android's own clock and notifications are drawn on top. Only the lock screen is changed; the home screen is always SysReadout's own drawing.
+Android's own clock and notifications are drawn on top. Only the lock screen is changed; the home screen is always DroidTTY's own drawing.
 
 ### Always-on display, lock screen and shade
 
 Settings › *screen*. All are off by default.
 
-**Access.** Turn on SysReadout's *lock service* (Android's accessibility settings; settings › screen links there). It draws these screens above Android's lock screen and status bar, wakes the screen and reads no screen content. The own lock and the shade need it. Without it, the always-on display and boot screen fall back to *display over other apps* and a small foreground service, which some phones (Nothing OS among them) stop or don't let wake the screen. On Android 13+ an app installed from an APK has the lock service greyed out until you open SysReadout's app info › ⋮ › *Allow restricted settings*.
+**Access.** Turn on DroidTTY's *lock service* (Android's accessibility settings; settings › screen links there). It draws these screens above Android's lock screen and status bar, wakes the screen and reads no screen content. The own lock and the shade need it. Without it, the always-on display and boot screen fall back to *display over other apps* and a small foreground service, which some phones (Nothing OS among them) stop or don't let wake the screen. On Android 13+ an app installed from an APK has the lock service greyed out until you open DroidTTY's app info › ⋮ › *Allow restricted settings*.
 
-**Always-on display.** After you turn the screen off, SysReadout turns it back on at very low brightness with one of nine looks, drawn in your theme:
+**Always-on display.** After you turn the screen off, DroidTTY turns it back on at very low brightness with one of nine looks, drawn in your theme:
 
 - **minimal clock**: clock, date, battery, waiting notifications
 - **terminal status**: clock and status rows you pick
@@ -271,13 +271,15 @@ Settings › *screen*. All are off by default.
 - **matrix rain**: falling characters around the clock; redraws twice a second, so it uses the most battery
 - **binary clock**: hours, minutes and seconds as binary columns
 
+Animated, about ten frames a second (they cost more battery than the still looks; pair them with *while charging* if that matters): **doom fire**, **starfield**, **game of life** (a new seed every minute), **spinning cube**, **rain on glass**, **aquarium**, **oscilloscope** (follows CPU load with Shizuku, otherwise a labelled sweep), **pong** (the score is the time), **plasma** and **DNA helix**. Every one keeps the clock and date readable over the motion. *Look* opens a list of all of them with what each is; one tap picks. Previews start on a tap so the settings page stays smooth. See them in the [gallery](GALLERY.md).
+
 *Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). Also adjustable: *size* (60 to 200%), *brightness* (1 to 40%), placement (below), *colour* (the theme's, accent only, dim only, white), *burn-in shift* on or off, and *go dark after* (never, or 1 to 60 minutes). Switch your phone's own always-on display off. It moves a few pixels each minute against burn-in and leaves out flicker and grain. Tap it to go on. Turning the screen off again or keeping the proximity sensor covered for about a second (pocket, face down) keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black. The same looks are offered as Android's screen saver (settings › display › screen saver).
 
 **Lock screen.** Three modes:
 
 - **android's own**: unchanged.
 - **boot screen over android's**: each time the screen turns on while locked, a preset plays over Android's lock screen; a tap opens Android's PIN pad and fingerprint straight away, skipping its clock page. A fingerprint straight away skips the preset. *Emergency call* on the GRUB preset uncovers Android's lock screen, which has its own emergency button.
-- **sysreadout's own pin lock**: for a phone whose Android screen lock is set to *none*. At every screen off SysReadout locks; the preset plays, then asks for your PIN in its own voice (`Password:`, `Enter Password:`, `C:\>unlock`, `PASSWORD?`…) on a terminal keypad whose digits are in a new random order every time (switch *shuffle digits* off for the usual phone layout). Each key fills in as it's pressed, typed digits show as `[*]`, a wrong PIN shakes the screen and buzzes and says how many tries are left before a wait, and the right one prints `[  OK  ] access granted`. After 5 wrong PINs each further try waits longer, from 30 seconds doubling up to 15 minutes, also across restarts.
+- **sysreadout's own pin lock**: for a phone whose Android screen lock is set to *none*. At every screen off DroidTTY locks; the preset plays, then asks for your PIN in its own voice (`Password:`, `Enter Password:`, `C:\>unlock`, `PASSWORD?`…) on a terminal keypad whose digits are in a new random order every time (switch *shuffle digits* off for the usual phone layout). Each key fills in as it's pressed, typed digits show as `[*]`, a wrong PIN shakes the screen and buzzes and says how many tries are left before a wait, and the right one prints `[  OK  ] access granted`. After 5 wrong PINs each further try waits longer, from 30 seconds doubling up to 15 minutes, also across restarts.
 
   While it's locked: Android's notification shade and quick settings are closed as soon as they open, an app that comes up (from recents, a notification or the home gesture) is sent home with the lock kept on top, and the back, home and recents keys do nothing. Incoming calls get through so they can be answered. It starts locked after a reboot or after the lock service restarts. There's no emergency button: there's no way to keep the dialer from reaching the rest of the phone.
 
@@ -302,7 +304,15 @@ Every value comes from the phone; one it can't read is left out. Taps during the
 
 **Status bar clock.** Settings › home › *android status bar* hides Android's status bar, clock included, while the home screen shows (swipe down from the top edge to see it for a moment). With Shizuku connected, *status-bar clock (everywhere)* removes just the clock from the status bar in every app, through the same setting Android's System UI tuner uses.
 
-**Notification shade.** SysReadout's own shade: battery, network, memory and uptime rows; quick toggles (Wi-Fi, Bluetooth, mobile data, airplane, location, do not disturb, torch, rotation) and brightness; what's playing with previous/play/next; and your notifications grouped by app, with open, dismiss (`[x]`), their action buttons and *clear all*. It opens from a swipe down that starts on the status bar (with the lock service; not while locked) or from a swipe down on home. When Android's own shade wins the swipe anyway (its gesture is handled before any app sees the touch), SysReadout closes it and opens its own in its place, so a flash of Android's shade can show for a moment. `[system shade]` lets Android's stay open for 30 seconds. With Shizuku connected the toggles and brightness switch directly; without it a toggle opens Android's panel for it (the torch always switches directly). Replies typed into a notification aren't offered. `[system shade]` opens Android's own. Swipe up or `[close]` to close it.
+**Notification shade.** DroidTTY's own shade, in ASCII boxes:
+
+- **readout**: battery, network, memory and uptime rows.
+- **toggles**: Wi-Fi, Bluetooth, mobile data, airplane, location, do not disturb, torch, rotation, hotspot, NFC, battery saver and dark mode. `[x]` on, `[ ]` off, `[?]` when Android won't say (hotspot without Shizuku).
+- **bluetooth devices**: paired devices, connected first, with the battery they report; tap to connect or disconnect (with Shizuku; otherwise Bluetooth settings open).
+- **wi-fi networks**: the last scan's networks with signal bars, `#` for secured; a tap opens Android's Wi-Fi panel to join with the saved password.
+- **levels**: brightness and media, ring and alarm volume as `[=====-----]` sliders. Drag along one or tap a spot. Brightness and *auto brightness* need Shizuku (apps can't change them otherwise); volume works without.
+- **playing**: what's playing, with previous/play/next.
+- **notifications**: grouped by app. Tap one to expand its full text or messages, then `[open]`, its own buttons, `[reply]` (type and send in place), `[snooze 15m]`, `[snooze 1h]`; `[x]` dismisses, `[clear all]` clears. It opens from a swipe down that starts on the status bar (with the lock service; not while locked) or from a swipe down on home. When Android's own shade wins the swipe anyway (its gesture is handled before any app sees the touch), DroidTTY closes it and opens its own in its place, so a flash of Android's shade can show for a moment. `[system shade]` lets Android's stay open for 30 seconds. With Shizuku connected the toggles and brightness switch directly; without it a toggle opens Android's panel for it (the torch always switches directly). Replies typed into a notification aren't offered. `[system shade]` opens Android's own. Swipe up or `[close]` to close it.
 
 ## 9. Battery use
 
@@ -312,7 +322,7 @@ Every value comes from the phone; one it can't read is left out. Taps during the
 - Flicker and grain are the only effects that redraw continuously.
 - The always-on display keeps the screen lit (dim) while it shows; on battery it stops below the level you set. *matrix rain* redraws twice a second, *prompt*, *tty clock* and *binary clock* once a second, the rest once a minute. The lock screen presets run for a few seconds each time the screen turns on.
 
-The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
+The *battery drain per app* table (Shizuku) shows DroidTTY's own share too.
 
 ## 10. Troubleshooting
 
@@ -321,17 +331,17 @@ The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
 | A row shows `needs … permission` | Tap the row in settings › log to switch it on again and allow the permission, or grant it in Android's app settings. |
 | Monitor tables are missing | They appear only when their source is available: check *usage access* and *shizuku* under settings › log › system monitor. |
 | `shizk  not running` after a reboot | Start Shizuku again in its app, or let it start on boot (settings › shizuku › *after a reboot*). |
-| The home screen says *safe mode after repeated crashes* | SysReadout crashed twice right after starting, so it came back without the log, Shizuku, the DNS monitor and your look. Tap the note to switch them back on. The crash report is under settings › about, to copy or share with a bug report. |
-| Accessibility or notification access is greyed out (*restricted setting*) | Android 13+ blocks these for apps installed from a downloaded APK. In SysReadout's app info, open the ⋮ menu › *Allow restricted settings*, or use *set up access with shizuku*. |
+| The home screen says *safe mode after repeated crashes* | DroidTTY crashed twice right after starting, so it came back without the log, Shizuku, the DNS monitor and your look. Tap the note to switch them back on. The crash report is under settings › about, to copy or share with a bug report. |
+| Accessibility or notification access is greyed out (*restricted setting*) | Android 13+ blocks these for apps installed from a downloaded APK. In DroidTTY's app info, open the ⋮ menu › *Allow restricted settings*, or use *set up access with shizuku*. |
 | The DNS monitor switches itself off | Another VPN took over, or Private DNS is set to a provider. |
 | `wifi` shows no network name | The `ssid` row needs the location permission *and* location switched on. |
-| *Connecting* never finishes in settings › shizuku | Wait 8 seconds: SysReadout switches to Shizuku's own shell (*direct shell*). If it stays, tap *retry now*, or stop and start Shizuku. |
+| *Connecting* never finishes in settings › shizuku | Wait 8 seconds: DroidTTY switches to Shizuku's own shell (*direct shell*). If it stays, tap *retry now*, or stop and start Shizuku. |
 | Always-on display or lock screen doesn't appear | Turn on the *lock service* (settings › screen › access). Switch your phone's own always-on display off. |
-| Forgot the own lock's PIN | Start Android in safe mode (hold volume down while the phone starts), turn SysReadout's lock service off in accessibility settings, restart, then set a new PIN under settings › screen. Or from a computer: `adb shell settings put secure enabled_accessibility_services ''`. |
+| Forgot the own lock's PIN | Start Android in safe mode (hold volume down while the phone starts), turn DroidTTY's lock service off in accessibility settings, restart, then set a new PIN under settings › screen. Or from a computer: `adb shell settings put secure enabled_accessibility_services ''`. |
 | Lock-screen snapshot doesn't show | Some phones override lock-screen wallpapers in their own theme settings; set the lock screen there to use the wallpaper. |
 | Rows are cut off at the bottom | Switch settings › log › *layout* to **feed**, or show fewer rows. |
 | Text over the log is hard to read | Use the *frosted* or *highlight* entry style, or turn down CRT glow. |
 
 ## 11. Privacy
 
-SysReadout collects nothing and sends nothing: no ads, analytics or tracking. Everything it shows is read on the phone and kept in memory while the home screen is visible. The only network use is the optional DNS monitor, which passes your apps' own lookups to your normal DNS server, and optional reverse-DNS lookups of connection addresses (made by Shizuku's helper process). If SysReadout crashes, the crash report stays on the phone (settings › about) until you share or delete it.
+DroidTTY collects nothing and sends nothing: no ads, analytics or tracking. Everything it shows is read on the phone and kept in memory while the home screen is visible. The only network use is the optional DNS monitor, which passes your apps' own lookups to your normal DNS server, and optional reverse-DNS lookups of connection addresses (made by Shizuku's helper process). If DroidTTY crashes, the crash report stays on the phone (settings › about) until you share or delete it.
