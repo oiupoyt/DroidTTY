@@ -133,14 +133,27 @@ class CoverHost(private val service: AccessibilityService) {
         }
     }
 
+    /** The always-on display goes dark only once the sensor stays covered: a passing hand or a flicky sensor doesn't count. */
+    private val pocket = Runnable {
+        if (mode != Mode.AOD) return@Runnable
+        CoverState.suppressed = true
+        afterAod()
+        service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+    }
+
     private val proximity = object : SensorEventListener {
         override fun onSensorChanged(e: SensorEvent) {
             val sensor = e.sensor ?: return
-            if (mode == Mode.AOD && e.values.firstOrNull()?.let { it < sensor.maximumRange } == true) {
-                CoverState.suppressed = true
-                CoverState.aodSeenAt = 0L
-                afterAod()
-                service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+            val value = e.values.firstOrNull() ?: return
+            if (mode != Mode.AOD) return
+            if (ScreenPolicy.isNear(value, sensor.maximumRange)) {
+                // Some sensors read "near" for a moment as the screen lights up.
+                val sinceLit = SystemClock.elapsedRealtime() - CoverState.aodLaunchedAt
+                val wait = ScreenPolicy.POCKET_MS + (ScreenPolicy.POCKET_GRACE_MS - sinceLit).coerceAtLeast(0L)
+                main.removeCallbacks(pocket)
+                main.postDelayed(pocket, wait)
+            } else {
+                main.removeCallbacks(pocket)
             }
         }
 
@@ -234,10 +247,10 @@ class CoverHost(private val service: AccessibilityService) {
 
     private fun screenOn() {
         val t = SystemClock.elapsedRealtime()
-        if (mode == Mode.AOD && t - CoverState.aodLaunchedAt < ScreenPolicy.AOD_WAKE_MS) return
+        // The always-on display turned the screen on itself (some phones send that late, or
+        // twice): it stays. Only a later wake, like the power key, moves on to the lock.
         if (mode == Mode.AOD) {
-            // The phone was woken some other way (power key) over the always-on display.
-            afterAod()
+            if (t - CoverState.aodLaunchedAt >= ScreenPolicy.AOD_WAKE_MS) afterAod()
             return
         }
         if (ownLocked) {
@@ -280,6 +293,7 @@ class CoverHost(private val service: AccessibilityService) {
     /** Leaves the always-on display: to the own lock or cover if they're on, else to Android. */
     private fun afterAod() {
         main.removeCallbacks(aodTimeout)
+        main.removeCallbacks(pocket)
         sensors.unregisterListener(proximity)
         releaseWake()
         CoverState.aodSeenAt = 0L
@@ -291,6 +305,7 @@ class CoverHost(private val service: AccessibilityService) {
 
     private fun leaveAod() {
         main.removeCallbacks(aodTimeout)
+        main.removeCallbacks(pocket)
         sensors.unregisterListener(proximity)
         releaseWake()
         CoverState.aodSeenAt = 0L
@@ -351,13 +366,19 @@ class CoverHost(private val service: AccessibilityService) {
             takeOverShade(pkg, className)
             return
         }
-        if (phone().inCall || pkg in CALL_PACKAGES) return
-        if (pkg == SYSTEM_UI) {
-            collapseSystemShade()
-        } else {
+        val call = pkg in CALL_PACKAGES || phone().inCall
+        when (ScreenPolicy.guard(ownLocked, screen.isShown, pkg == SYSTEM_UI, call)) {
+            ScreenPolicy.Guard.IGNORE -> return
+            ScreenPolicy.Guard.COLLAPSE_SHADE -> collapseSystemShade()
             // An app came up behind the lock; going home puts SysReadout's own home screen there.
-            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+            ScreenPolicy.Guard.SEND_HOME -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
         }
+        relock()
+    }
+
+    /** Puts the own lock back on top, unless the always-on display is up: it hands over itself when tapped. */
+    private fun relock() {
+        if (mode == Mode.AOD && screen.isShown) return
         if (mode != Mode.OWN || !screen.isShown) showScreen(Mode.OWN)
     }
 
@@ -387,8 +408,11 @@ class CoverHost(private val service: AccessibilityService) {
     fun windowsChanged(systemShadeOpen: Boolean) {
         if (!systemShadeOpen) return
         if (ownLocked) {
-            collapseSystemShade()
-            if (mode != Mode.OWN || !screen.isShown) showScreen(Mode.OWN)
+            // Android's shade can't open over SysReadout's own screen; this only fires when it isn't up.
+            if (ScreenPolicy.guard(ownLocked, screen.isShown, fromSystemUi = true, inCall = false) == ScreenPolicy.Guard.COLLAPSE_SHADE) {
+                collapseSystemShade()
+                relock()
+            }
             return
         }
         takeOverShade(SYSTEM_UI, null)

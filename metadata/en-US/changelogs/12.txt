@@ -1,0 +1,1 @@
+Always-on display stays on: the own lock no longer swaps it for the PIN screen when the display lights up, and the pocket check waits until the sensor is really covered.

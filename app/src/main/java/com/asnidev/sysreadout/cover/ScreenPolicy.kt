@@ -41,4 +41,25 @@ object ScreenPolicy {
 
     /** The screen-on the always-on display itself triggers arrives within this window. */
     const val AOD_WAKE_MS = 3_000L
+
+    enum class Guard { IGNORE, COLLAPSE_SHADE, SEND_HOME }
+
+    /**
+     * What the own lock does when a window opens. While SysReadout's own screen (the
+     * always-on display or the lock) is on top it covers everything, so nothing needs
+     * doing: reacting there is what used to swap the always-on display for the lock.
+     */
+    fun guard(ownLocked: Boolean, ownScreenShowing: Boolean, fromSystemUi: Boolean, inCall: Boolean): Guard = when {
+        !ownLocked || inCall -> Guard.IGNORE
+        fromSystemUi -> if (ownScreenShowing) Guard.IGNORE else Guard.COLLAPSE_SHADE
+        else -> Guard.SEND_HOME
+    }
+
+    /** Covered, for the pocket check. Sensors report "far" as their maximum, or as a few cm on some phones. */
+    fun isNear(value: Float, maximumRange: Float): Boolean = value < minOf(maximumRange, NEAR_CM)
+
+    /** A pocket has to stay covered this long, and not in the first moments after the display lights up. */
+    const val POCKET_MS = 1_200L
+    const val POCKET_GRACE_MS = 2_000L
+    private const val NEAR_CM = 3f
 }

@@ -404,3 +404,30 @@ class ShuffleToggleTest {
         assertTrue("older settings keep shuffling", CoverPrefs.fromJson("{}").shuffleKeypad)
     }
 }
+
+class AodStaysTest {
+
+    @Test
+    fun ownLockLeavesItsOwnScreensAlone() {
+        // The always-on display (or the lock) is on top: SystemUI's own wake-up events change nothing.
+        assertEquals(ScreenPolicy.Guard.IGNORE, ScreenPolicy.guard(ownLocked = true, ownScreenShowing = true, fromSystemUi = true, inCall = false))
+    }
+
+    @Test
+    fun ownLockStillClosesTheShadeAndApps() {
+        assertEquals(ScreenPolicy.Guard.COLLAPSE_SHADE, ScreenPolicy.guard(true, ownScreenShowing = false, fromSystemUi = true, inCall = false))
+        assertEquals(ScreenPolicy.Guard.SEND_HOME, ScreenPolicy.guard(true, ownScreenShowing = true, fromSystemUi = false, inCall = false))
+        assertEquals(ScreenPolicy.Guard.IGNORE, ScreenPolicy.guard(true, ownScreenShowing = false, fromSystemUi = false, inCall = true))
+        assertEquals(ScreenPolicy.Guard.IGNORE, ScreenPolicy.guard(false, ownScreenShowing = false, fromSystemUi = true, inCall = false))
+    }
+
+    @Test
+    fun nearMeansReallyCovered() {
+        assertTrue(ScreenPolicy.isNear(0f, 5f))
+        assertFalse(ScreenPolicy.isNear(5f, 5f))
+        // Sensors whose "far" is a few centimetres below their maximum.
+        assertFalse(ScreenPolicy.isNear(5f, 10f))
+        assertFalse(ScreenPolicy.isNear(8f, 8f))
+        assertTrue(ScreenPolicy.isNear(1f, 1.5f))
+    }
+}
