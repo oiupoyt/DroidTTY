@@ -29,6 +29,7 @@ import com.asnidev.sysreadout.LauncherViewModel
 import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.AppKey
 import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.data.LockScreenMode
 import com.asnidev.sysreadout.data.EntryStyle
 import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.LockMode
@@ -105,9 +106,10 @@ private enum class Picking { LEFT, RIGHT }
 private fun coverSummary(c: CoverPrefs): String {
     val parts = listOfNotNull(
         c.aodMode.takeIf { it != AodMode.OFF }?.let { "aod ${it.title()}" },
-        c.lockPreset.takeIf { c.lockCover }?.let { "cover ${it.title()}" },
+        c.lockPreset.takeIf { c.lockScreen != LockScreenMode.OFF }?.let { "lock ${it.title()}" },
+        "shade".takeIf { c.shade },
     )
-    return parts.joinToString(" · ").ifEmpty { "always-on display · lock cover" }
+    return parts.joinToString(" · ").ifEmpty { "always-on display · lock screen · shade" }
 }
 
 @Composable

@@ -40,6 +40,15 @@ data class CoverData(
     val events: List<String> = emptyList(),
     /** Sampled status rows ("bat   85% ..."), for the terminal-status look. */
     val rows: List<String> = emptyList(),
+    val uptimeMs: Long? = null,
+    /** Installed packages, as neofetch counts them. */
+    val packages: Int? = null,
+    /** "1080x2412 120Hz" */
+    val display: String? = null,
+    /** Per-core load 0..1 from the last Shizuku sample; empty without it. */
+    val coreLoad: List<Double> = emptyList(),
+    /** "Title · Artist" of what's playing; null when nothing is or there's no notification access. */
+    val playing: String? = null,
 ) {
     val clock: String get() = now.format(if (is24h) H24 else H12)
     val clockSeconds: String get() = now.format(if (is24h) H24S else H12S)
@@ -50,6 +59,22 @@ data class CoverData(
     val batteryText: String? get() = battery?.let { "$it%" + if (charging) " charging" else "" }
 
     fun alarmText(): String? = nextAlarm?.format(if (is24h) DAY_H24 else DAY_H12)
+
+    /** "3 days, 4 hours, 12 mins" the way uptime(1) and neofetch print it. */
+    val uptimeText: String? get() = uptimeMs?.let { ms ->
+        val mins = ms / 60_000
+        val d = mins / 1_440
+        val h = mins / 60 % 24
+        val m = mins % 60
+        listOfNotNull(
+            d.takeIf { it > 0 }?.let { "$it day" + if (it == 1L) "" else "s" },
+            h.takeIf { it > 0 }?.let { "$it hour" + if (it == 1L) "" else "s" },
+            "$m min" + if (m == 1L) "" else "s",
+        ).joinToString(", ")
+    }
+
+    /** The memory in use, when both totals are known. */
+    val memUsedMb: Long? get() = if (memTotalMb != null && memAvailMb != null) memTotalMb - memAvailMb else null
 
     companion object {
         private val H24 = DateTimeFormatter.ofPattern("HH:mm", Locale.US)
@@ -80,6 +105,9 @@ object CoverState {
 
     /** Newest log events, oldest first; kept by the log engine while the launcher runs. */
     @Volatile var events: List<String> = emptyList()
+
+    /** Per-core load from the log engine's last Shizuku sample. */
+    @Volatile var coreLoad: List<Double> = emptyList()
 
     fun aodShowing(now: Long): Boolean = now - aodSeenAt < AOD_SEEN_MS
 

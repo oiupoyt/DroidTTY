@@ -1,0 +1,10 @@
+<resources>
+    <!-- No app icon on the splash screen before the always-on display or lock screen draws. -->
+    <style name="Theme.SysReadout.Cover">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+</resources>

@@ -6,11 +6,18 @@ import org.json.JSONObject
 /** When SysReadout's own always-on display comes up after the screen turns off. */
 enum class AodMode { OFF, CHARGING, ALWAYS }
 
-enum class AodLook { CLOCK, STATUS, PROMPT, LOG }
+enum class AodLook { CLOCK, STATUS, PROMPT, LOG, NEOFETCH, TTY, HTOP, MATRIX, BINARY }
 
-enum class LockPreset { BOOTLINE, BIOS, DOS, LOGIN, GRUB }
+enum class LockPreset { ARCH, BOOTLINE, BIOS, DOS, LOGIN, GRUB, C64, PANIC, SSH, WAKEUP }
 
-/** Always-on display and lock-screen cover; both need the screen service. */
+/**
+ * OFF: Android's lock screen as it is. COVER: a boot screen over Android's lock,
+ * which still does the unlocking. OWN: SysReadout's own PIN lock, for phones
+ * whose Android screen lock is set to none.
+ */
+enum class LockScreenMode { OFF, COVER, OWN }
+
+/** Always-on display, lock screen and notification shade. */
 data class CoverPrefs(
     val aodMode: AodMode = AodMode.OFF,
     val aodLook: AodLook = AodLook.CLOCK,
@@ -18,15 +25,19 @@ data class CoverPrefs(
     val aodRows: List<String> = listOf("bat", "net", "mem"),
     /** On battery, the always-on display waits for the charger below this level. */
     val aodMinBattery: Int = 20,
-    val lockCover: Boolean = false,
-    val lockPreset: LockPreset = LockPreset.BOOTLINE,
+    val lockScreen: LockScreenMode = LockScreenMode.OFF,
+    val lockPreset: LockPreset = LockPreset.ARCH,
+    /** SysReadout's shade opens from a swipe down on the status bar and on home. */
+    val shade: Boolean = false,
 ) {
-    val needsService: Boolean get() = aodMode != AodMode.OFF || lockCover
+    /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
+    val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
 
     fun toJson(): String = JSONObject()
         .put("aodMode", aodMode.name).put("aodLook", aodLook.name)
         .put("aodRows", JSONArray(aodRows)).put("aodMinBattery", aodMinBattery)
-        .put("lockCover", lockCover).put("lockPreset", lockPreset.name)
+        .put("lockScreen", lockScreen.name).put("lockPreset", lockPreset.name)
+        .put("shade", shade)
         .toString()
 
     companion object {
@@ -37,13 +48,16 @@ data class CoverPrefs(
             val d = CoverPrefs()
             val o = runCatching { JSONObject(s ?: return d) }.getOrElse { return d }
             val rows = o.optJSONArray("aodRows")?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } }
+            // 0.3.0 saved only an on/off switch for the cover.
+            val legacy = if (o.optBoolean("lockCover", false)) LockScreenMode.COVER else d.lockScreen
             return CoverPrefs(
                 aodMode = enumOr(o.optString("aodMode"), d.aodMode),
                 aodLook = enumOr(o.optString("aodLook"), d.aodLook),
                 aodRows = rows ?: d.aodRows,
                 aodMinBattery = o.optInt("aodMinBattery", d.aodMinBattery).coerceIn(MIN_BATTERY_LOW, MIN_BATTERY_HIGH),
-                lockCover = o.optBoolean("lockCover", d.lockCover),
+                lockScreen = enumOr(o.optString("lockScreen"), legacy),
                 lockPreset = enumOr(o.optString("lockPreset"), d.lockPreset),
+                shade = o.optBoolean("shade", d.shade),
             )
         }
 

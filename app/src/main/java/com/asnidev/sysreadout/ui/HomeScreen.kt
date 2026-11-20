@@ -42,6 +42,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.asnidev.sysreadout.LauncherViewModel
 import com.asnidev.sysreadout.Screen
 import com.asnidev.sysreadout.apps.AppEntry
+import com.asnidev.sysreadout.cover.CoverHost
 import com.asnidev.sysreadout.data.EntryStyle
 import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.StyleElement
@@ -76,7 +77,9 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
     val onSwipe: (Swipe) -> Unit = { dir ->
         when (dir) {
             Swipe.UP -> vm.screen = Screen.DRAWER
-            Swipe.DOWN -> SystemActions.expandNotifications(context)
+            // SysReadout's own shade when it's on and the lock service can draw it.
+            Swipe.DOWN -> CoverHost.active?.takeIf { vm.cover.value.shade }?.openShade()
+                ?: SystemActions.expandNotifications(context)
             Swipe.LEFT -> currentPrefs.swipeLeft?.let(vm::launch)
             Swipe.RIGHT -> currentPrefs.swipeRight?.let(vm::launch)
         }

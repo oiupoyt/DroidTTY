@@ -3,6 +3,7 @@ package com.asnidev.sysreadout.monitor
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
 
 /**
@@ -15,14 +16,19 @@ class NotifListener : NotificationListenerService() {
     override fun onListenerConnected() {
         NotifLog.connected = true
         NotifLog.active = activeCount()
+        instance = this
+        changed()
     }
 
     override fun onListenerDisconnected() {
         NotifLog.connected = false
+        instance = null
+        changed()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         NotifLog.active = activeCount()
+        changed()
         val n = sbn.notification
         // Ongoing ones (music, downloads, navigation) and group summaries aren't new messages.
         if (sbn.isOngoing || n.flags and Notification.FLAG_GROUP_SUMMARY != 0 || sbn.packageName == packageName) return
@@ -34,9 +40,34 @@ class NotifListener : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         NotifLog.active = activeCount()
+        changed()
     }
 
     private fun activeCount(): Int = runCatching { activeNotifications?.size ?: 0 }.getOrDefault(0)
+
+    companion object {
+        @Volatile private var instance: NotifListener? = null
+
+        /** Bumped on every post and removal, so SysReadout's shade knows to re-read. */
+        val version = MutableStateFlow(0L)
+
+        private fun changed() {
+            version.value = version.value + 1
+        }
+
+        /** What's in the shade now; empty without notification access. */
+        fun active(): List<StatusBarNotification> =
+            runCatching { instance?.activeNotifications?.toList() }.getOrNull().orEmpty()
+
+        /** Dismisses like a swipe in Android's shade; ongoing ones stay. */
+        fun dismiss(key: String) {
+            runCatching { instance?.cancelNotification(key) }
+        }
+
+        fun dismissAll() {
+            runCatching { instance?.cancelAllNotifications() }
+        }
+    }
 }
 
 object NotifLog {

@@ -53,21 +53,22 @@ fun AodContent(look: AodLook, rows: List<String>, onTap: (() -> Unit)?, onShown:
             delay(DATA_MS)
         }
     }
+    val every = AodFaces.refreshMs(look)
     val blinks = look == AodLook.PROMPT
-    LaunchedEffect(blinks) {
+    LaunchedEffect(every) {
         while (true) {
             tick = System.currentTimeMillis()
             onShown()
-            delay(if (blinks) 1_000L else 1_000L - tick % 1_000L)
+            delay(if (every < 1_000L) every else 1_000L - tick % 1_000L)
         }
     }
 
     val d = data ?: return
-    // The clock follows the tick (to the minute unless it blinks), the rest follows the last read.
-    val shown = d.copy(now = CoverData.at(if (blinks) tick else tick - tick % 60_000L))
+    // The clock follows the tick, rounded to the look's own refresh so nothing redraws in between.
+    val shown = d.copy(now = CoverData.at(tick - tick % every.coerceAtMost(60_000L)))
     val tap by rememberUpdatedState(onTap)
     CoverView(
-        AodFaces.frame(look, shown),
+        AodFaces.frame(look, shown, tick),
         styled,
         // Only the prompt blinks; a constant here spares the other looks a redraw every second.
         blinkOn = !blinks || (tick / 1_000L) % 2L == 0L,

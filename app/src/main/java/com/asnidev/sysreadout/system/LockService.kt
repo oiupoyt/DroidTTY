@@ -4,18 +4,34 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.os.Build
 import android.view.accessibility.AccessibilityEvent
+import com.asnidev.sysreadout.cover.CoverHost
 import java.lang.ref.WeakReference
 
-/** Exists only to call GLOBAL_ACTION_LOCK_SCREEN; listens to no events. */
+/**
+ * Locks the screen on a double-tap, and hosts the always-on display, lock
+ * screens and shade as overlays ([CoverHost]). Listens to no events and reads
+ * no window content.
+ */
 class LockService : AccessibilityService() {
+
+    private var host: CoverHost? = null
 
     override fun onServiceConnected() {
         instance = WeakReference(this)
+        host = CoverHost(this).also { it.start() }
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
         instance = null
+        host?.stop()
+        host = null
         return super.onUnbind(intent)
+    }
+
+    override fun onDestroy() {
+        host?.stop()
+        host = null
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}

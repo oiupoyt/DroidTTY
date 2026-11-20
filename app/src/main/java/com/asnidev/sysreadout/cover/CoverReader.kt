@@ -1,6 +1,15 @@
 package com.asnidev.sysreadout.cover
 
 import android.app.ActivityManager
+import android.content.ComponentName
+import android.hardware.display.DisplayManager
+import android.media.MediaMetadata
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
+import android.os.SystemClock
+import android.view.Display
+import com.asnidev.sysreadout.monitor.NotifListener
+import kotlin.math.roundToInt
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
@@ -57,8 +66,30 @@ class CoverReader(private val context: Context) {
             lastUnlock = CoverState.lastUnlock?.let { CoverData.at(it) },
             events = CoverState.events,
             rows = if (rows.isEmpty()) emptyList() else runCatching { probes.sample(rows) }.getOrDefault(emptyList()),
+            uptimeMs = SystemClock.elapsedRealtime(),
+            packages = runCatching { context.packageManager.getInstalledPackages(0).size }.getOrNull(),
+            display = display(),
+            coreLoad = CoverState.coreLoad,
+            playing = playing(),
         )
     }
+
+    private fun display(): String? = runCatching {
+        val mode = context.getSystemService(DisplayManager::class.java).getDisplay(Display.DEFAULT_DISPLAY).mode
+        "${mode.physicalWidth}x${mode.physicalHeight} ${mode.refreshRate.roundToInt()}Hz"
+    }.getOrNull()
+
+    /** Needs notification access, like the media row. */
+    private fun playing(): String? = runCatching {
+        if (!NotifLog.connected) return@runCatching null
+        val msm = context.getSystemService(MediaSessionManager::class.java)
+        val session = msm.getActiveSessions(ComponentName(context, NotifListener::class.java))
+            .firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: return@runCatching null
+        val meta = session.metadata
+        val title = meta?.getString(MediaMetadata.METADATA_KEY_TITLE)?.takeIf { it.isNotBlank() } ?: return@runCatching null
+        val artist = meta.getString(MediaMetadata.METADATA_KEY_ARTIST)?.takeIf { it.isNotBlank() }
+        title + (artist?.let { " · $it" } ?: "")
+    }.getOrNull()
 
     private fun soc(): String? {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

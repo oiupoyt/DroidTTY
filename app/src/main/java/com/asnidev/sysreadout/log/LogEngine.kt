@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.asnidev.sysreadout.apps.AppEntry
 import com.asnidev.sysreadout.cover.CoverState
+import com.asnidev.sysreadout.data.AodLook
 import com.asnidev.sysreadout.data.LauncherPrefs
 import com.asnidev.sysreadout.data.LogLayout
 import com.asnidev.sysreadout.data.MonitorPrefs
@@ -73,6 +74,8 @@ class LogEngine(
     private val onShizukuTip: () -> Unit = {},
     /** Returns once the saved settings are loaded; until then [prefs] and [monitor] hold defaults. */
     private val awaitSettings: suspend () -> Unit = {},
+    /** The always-on display's look, so the htop look gets per-core load sampled. */
+    private val coverLook: () -> AodLook? = { null },
 ) {
     val usage = UsageSource(context)
     private val reader = ProbeReader(context)
@@ -306,7 +309,8 @@ class LogEngine(
                 if (m.conns || m.evConns) sampleConns(m, scope) else connTable = null
                 if (m.evLogcat) sampleLogcat(m)
                 if ("load" in rows) sampleLoad()
-                if ("cores" in rows) sampleCores()
+                // The always-on display's htop look shows per-core load too.
+                if ("cores" in rows || coverWantsCores()) sampleCores()
                 // dumpsys calls cost more; every other round is plenty.
                 val now = System.currentTimeMillis()
                 if (now - slowShellAt >= 2 * m.intervalSec * 1000L) {
@@ -491,7 +495,10 @@ class LogEngine(
         val each = cores.joinToString(" ") { u -> u?.let { "%2d".format((it * 100).toInt().coerceAtMost(99)) } ?: "--" }
         val avg = cores.filterNotNull().average().takeIf { !it.isNaN() } ?: 0.0
         external["cores"] = "$each  avg ${(avg * 100).toInt()}%"
+        CoverState.coreLoad = cores.map { it ?: 0.0 }
     }
+
+    private fun coverWantsCores() = coverLook() == AodLook.HTOP
 
     private suspend fun sampleTemps() {
         val temps = Parsers.temperatures(shizuku.exec("dumpsys thermalservice") ?: return)

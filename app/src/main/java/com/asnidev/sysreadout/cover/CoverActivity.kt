@@ -1,6 +1,8 @@
 package com.asnidev.sysreadout.cover
 
+import android.app.ActivityOptions
 import android.app.KeyguardManager
+import android.window.SplashScreen
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -212,7 +214,13 @@ class CoverActivity : ComponentActivity() {
             val intent = Intent(context, CoverActivity::class.java)
                 .putExtra(EXTRA_MODE, mode)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            runCatching { context.startActivity(intent) }.onFailure { Log.w("CoverActivity", "couldn't show the $mode cover", it) }
+            // No splash screen (Android 13+ draws the app icon first otherwise).
+            val options = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ActivityOptions.makeBasic().apply { splashScreenStyle = SplashScreen.SPLASH_SCREEN_STYLE_SOLID_COLOR }.toBundle()
+            } else {
+                null
+            }
+            runCatching { context.startActivity(intent, options) }.onFailure { Log.w("CoverActivity", "couldn't show the $mode cover", it) }
         }
     }
 }

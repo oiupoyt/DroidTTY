@@ -4,6 +4,7 @@ import com.asnidev.sysreadout.data.AodLook
 import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.LockPreset
+import com.asnidev.sysreadout.data.LockScreenMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -15,7 +16,7 @@ class CoverPrefsTest {
 
     @Test
     fun roundTrips() {
-        val p = CoverPrefs(AodMode.ALWAYS, AodLook.PROMPT, listOf("bat", "ip"), 35, true, LockPreset.GRUB)
+        val p = CoverPrefs(AodMode.ALWAYS, AodLook.NEOFETCH, listOf("bat", "ip"), 35, LockScreenMode.OWN, LockPreset.C64, shade = true)
         assertEquals(p, CoverPrefs.fromJson(p.toJson()))
     }
 
@@ -26,14 +27,22 @@ class CoverPrefsTest {
         assertFalse(CoverPrefs().needsService)
         val odd = CoverPrefs.fromJson("""{"aodMode":"SOMETIMES","lockPreset":"AMIGA","aodMinBattery":1}""")
         assertEquals(AodMode.OFF, odd.aodMode)
-        assertEquals(LockPreset.BOOTLINE, odd.lockPreset)
+        assertEquals(LockPreset.ARCH, odd.lockPreset)
         assertEquals(CoverPrefs.MIN_BATTERY_LOW, odd.aodMinBattery)
     }
 
     @Test
-    fun serviceRunsForEitherFeature() {
+    fun serviceRunsForTheAodAndCover() {
         assertTrue(CoverPrefs(aodMode = AodMode.CHARGING).needsService)
-        assertTrue(CoverPrefs(lockCover = true).needsService)
+        assertTrue(CoverPrefs(lockScreen = LockScreenMode.COVER).needsService)
+        assertFalse("own lock runs in the lock service", CoverPrefs(lockScreen = LockScreenMode.OWN).needsService)
+    }
+
+    @Test
+    fun migratesTheOldCoverSwitch() {
+        assertEquals(LockScreenMode.COVER, CoverPrefs.fromJson("""{"lockCover":true,"lockPreset":"DOS"}""").lockScreen)
+        assertEquals(LockScreenMode.OFF, CoverPrefs.fromJson("""{"lockCover":false}""").lockScreen)
+        assertEquals(LockPreset.DOS, CoverPrefs.fromJson("""{"lockCover":true,"lockPreset":"DOS"}""").lockPreset)
     }
 }
 
@@ -59,7 +68,7 @@ class ScreenPolicyTest {
 
     @Test
     fun nothingDuringCallsWithoutAccessInSafeModeOrAfterTheUserSaidDark() {
-        val p = CoverPrefs(aodMode = AodMode.ALWAYS, lockCover = true)
+        val p = CoverPrefs(aodMode = AodMode.ALWAYS, lockScreen = LockScreenMode.COVER)
         assertFalse(ScreenPolicy.aodOnScreenOff(p, idle.copy(inCall = true), false))
         assertFalse(ScreenPolicy.aodOnScreenOff(p, idle.copy(canOverlay = false), false))
         assertFalse(ScreenPolicy.aodOnScreenOff(p, idle.copy(safeMode = true), false))
@@ -71,8 +80,9 @@ class ScreenPolicyTest {
 
     @Test
     fun coverOnlyWhenLockedAndNotOverTheAod() {
-        val p = CoverPrefs(lockCover = true)
+        val p = CoverPrefs(lockScreen = LockScreenMode.COVER)
         assertTrue(ScreenPolicy.coverOnScreenOn(p, idle, false, 60_000))
+        assertFalse(ScreenPolicy.coverOnScreenOn(CoverPrefs(lockScreen = LockScreenMode.OWN), idle, false, 60_000))
         assertFalse(ScreenPolicy.coverOnScreenOn(p, idle.copy(locked = false), false, 60_000))
         assertFalse(ScreenPolicy.coverOnScreenOn(p, idle, aodShowing = true, sinceAodLaunchMs = 60_000))
         assertFalse("the aod's own wake", ScreenPolicy.coverOnScreenOn(p, idle, false, 500))
@@ -81,8 +91,8 @@ class ScreenPolicyTest {
 
     @Test
     fun aodTapGoesToTheCoverOnlyWhenLocked() {
-        assertTrue(ScreenPolicy.coverAfterAod(CoverPrefs(lockCover = true), locked = true))
-        assertFalse(ScreenPolicy.coverAfterAod(CoverPrefs(lockCover = true), locked = false))
+        assertTrue(ScreenPolicy.coverAfterAod(CoverPrefs(lockScreen = LockScreenMode.COVER), locked = true))
+        assertFalse(ScreenPolicy.coverAfterAod(CoverPrefs(lockScreen = LockScreenMode.COVER), locked = false))
         assertFalse(ScreenPolicy.coverAfterAod(CoverPrefs(), locked = true))
     }
 }
@@ -113,6 +123,8 @@ class CoverFacesTest {
             assertTrue("$p runs forward", s.beats.zipWithNext().all { (a, b) -> a.first < b.first })
             assertTrue("$p finishes in a few seconds", s.readyAt in 1L..6_000L)
             assertTrue("$p says how to go on", s.lastText().contains("tap", ignoreCase = true) || p == LockPreset.GRUB)
+            val own = LockPresets.script(p, full, own = true)
+            assertFalse("$p own lock has no tap hint", own.lastText().contains("tap ", ignoreCase = true))
         }
     }
 
@@ -141,9 +153,12 @@ class CoverFacesTest {
                 assertFalse("$p invents $word", text.contains(word))
             }
         }
-        AodLook.entries.forEach { look ->
-            val text = AodFaces.frame(look, bare).lines.joinToString("\n") { it.text }
+        AodLook.entries.filter { it != AodLook.MATRIX }.forEach { look ->
+            val text = AodFaces.frame(look, bare).lines.joinToString("\n") { it.mark + it.text }
             assertFalse("$look invents a battery level", text.contains("%"))
+            listOf("Memory", "Mem[", "Bat[", "Uptime", "Packages").forEach { word ->
+                assertFalse("$look invents $word", text.contains(word))
+            }
         }
     }
 
@@ -187,5 +202,127 @@ class CoverFacesTest {
         val spots = (0L until 16L).map { burnInShift(it) }
         assertEquals(8, spots.toSet().size)
         assertEquals(spots[0], spots[8])
+    }
+}
+
+class NewLooksTest {
+
+    private val now = ZonedDateTime.of(2026, 11, 19, 13, 7, 42, 0, ZoneOffset.UTC)
+    private val d = CoverData(
+        now = now, is24h = true, battery = 61, manufacturer = "Nothing", model = "A065", device = "Pacman",
+        android = "16", api = 36, kernel = "6.1.99", soc = "MT6886", cores = 8, memTotalMb = 8_000, memAvailMb = 2_000,
+        storageTotalGb = 238.0, storageFreeGb = 91.5, net = "wifi", uptimeMs = (2 * 24 * 60 + 3 * 60 + 5) * 60_000L,
+        packages = 412, coreLoad = listOf(0.5, 0.25),
+    )
+
+    private fun text(look: AodLook) = AodFaces.frame(look, d).lines.joinToString("\n") { it.mark + it.text }
+
+    @Test
+    fun ttyClockDrawsTheTime() {
+        val rows = AodFaces.bigDigits("13:07")
+        assertEquals(5, rows.size)
+        assertEquals("  # ###   ### ###", rows[0])
+        assertEquals(rows, AodFaces.frame(AodLook.TTY, d).lines.take(5).map { it.text })
+    }
+
+    @Test
+    fun binaryClockReadsBack() {
+        // 13:07:42 -> digits 1 3 0 7 4 2; the 1-bit row has 1,3,7 set.
+        assertEquals("# #   . #   . .", AodFaces.binaryRow(listOf(1, 3, 0, 7, 4, 2), 0))
+        assertEquals(". .   . #   # .", AodFaces.binaryRow(listOf(1, 3, 0, 7, 4, 2), 2))
+    }
+
+    @Test
+    fun neofetchUsesThePhonesValues() {
+        val t = text(AodLook.NEOFETCH)
+        assertTrue(t.contains("pacman@android"))
+        assertTrue(t.contains("Kernel: 6.1.99"))
+        assertTrue(t.contains("Uptime: 2 days, 3 hours, 5 mins"))
+        assertTrue(t.contains("Packages: 412 (pm)"))
+        assertTrue(t.contains("Memory: 6000MiB / 8000MiB"))
+    }
+
+    @Test
+    fun htopMeters() {
+        assertEquals("Mem[||||    50%]", AodFaces.meter("Mem", 0.5, "50%", width = 11))
+        val t = text(AodLook.HTOP)
+        assertTrue(t.contains(" 0["))
+        assertTrue(t.contains("Bat["))
+        assertTrue(AodFaces.frame(AodLook.HTOP, d.copy(coreLoad = emptyList())).lines.any { it.text.contains("shizuku") })
+    }
+
+    @Test
+    fun matrixMovesAndKeepsTheClock() {
+        val a = AodFaces.frame(AodLook.MATRIX, d, tick = 0)
+        val b = AodFaces.frame(AodLook.MATRIX, d, tick = 500)
+        assertTrue(a.lines.any { it.text == "13:07" })
+        assertFalse(a == b)
+    }
+
+    @Test
+    fun archBootsToTheLoginPrompt() {
+        val s = LockPresets.script(LockPreset.ARCH, d)
+        val all = s.beats.joinToString("\n") { (_, f) -> f.lines.joinToString("\n") { it.mark + it.text } }
+        assertTrue(all.contains("Loading Linux 6.1.99 ..."))
+        assertTrue(all.contains(":: running early hook [udev]"))
+        assertTrue(all.contains("Welcome to Arch Linux!"))
+        assertTrue(all.contains(LockPresets.OK + "Reached target Multi-User System."))
+        assertTrue(s.beats.last().second.lines.any { it.text == "pacman login: " })
+        assertTrue(s.beats.last().second.tail || s.beats.any { it.second.tail })
+    }
+
+    @Test
+    fun ownPromptHidesTheDigits() {
+        LockPreset.entries.forEach { p ->
+            val lines = LockPresets.prompt(p, d, typed = 4, status = LockPresets.FAILED)
+            val joined = lines.joinToString("\n") { it.text }
+            assertTrue("$p shows stars", joined.contains("****"))
+            assertFalse("$p leaks the marker", joined.contains(LockPresets.FAILED))
+        }
+    }
+
+    @Test
+    fun ownGrubHasNoCameraEntry() {
+        val actions = LockPresets.script(LockPreset.GRUB, d, own = true).beats.last().second.lines.mapNotNull { it.action }
+        assertFalse(LockPresets.ACTION_CAMERA in actions)
+        assertTrue(LockPresets.ACTION_EMERGENCY in actions)
+    }
+}
+
+class PinTest {
+
+    @Test
+    fun verifiesOnlyTheRightPin() {
+        val h = PinHash.of("2580", iterations = 1_000)
+        assertTrue(h.matches("2580"))
+        assertFalse(h.matches("2581"))
+        assertFalse(h.matches(""))
+        assertEquals(h, PinHash.decode(h.encode()))
+        assertTrue(PinHash.decode(h.encode())!!.matches("2580"))
+    }
+
+    @Test
+    fun saltsDiffer() {
+        val a = PinHash.of("1234", iterations = 1_000)
+        val b = PinHash.of("1234", iterations = 1_000)
+        assertFalse(a.encode() == b.encode())
+        assertFalse("the pin itself isn't stored", a.encode().contains("1234"))
+    }
+
+    @Test
+    fun onlyDigitsOfSaneLength() {
+        assertFalse(PinHash.valid("123"))
+        assertFalse(PinHash.valid("12a4"))
+        assertTrue(PinHash.valid("1234"))
+        assertFalse(PinHash.valid("1".repeat(17)))
+        assertEquals(null, PinHash.decode("garbage"))
+    }
+
+    @Test
+    fun lockoutEscalatesAndCaps() {
+        assertEquals(0L, Lockout.delayAfter(4))
+        assertEquals(30_000L, Lockout.delayAfter(5))
+        assertEquals(60_000L, Lockout.delayAfter(6))
+        assertEquals(15 * 60_000L, Lockout.delayAfter(50))
     }
 }

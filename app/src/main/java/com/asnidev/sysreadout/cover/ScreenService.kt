@@ -15,12 +15,14 @@ import android.media.AudioManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.asnidev.sysreadout.MainActivity
 import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.data.LockScreenMode
 import com.asnidev.sysreadout.data.SettingsStore
 import com.asnidev.sysreadout.system.CrashGuard
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -44,6 +46,8 @@ class ScreenService : Service() {
 
     private val screen = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            // The lock service draws overlays itself and handles these better; this is the fallback.
+            if (CoverHost.available) return
             when (intent.action) {
                 Intent.ACTION_SCREEN_OFF -> screenOff()
                 Intent.ACTION_SCREEN_ON -> screenOn()
@@ -149,13 +153,21 @@ class ScreenService : Service() {
         }
         if (ScreenPolicy.aodOnScreenOff(prefs, now(), CoverState.suppressed)) {
             CoverState.aodLaunchedAt = t
+            // An activity can only turn the screen on as it is launched; a waking wake lock covers phones
+            // where that is ignored for launches from the background.
+            @Suppress("DEPRECATION")
+            getSystemService(PowerManager::class.java)
+                .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "sysreadout:aod-start")
+                .acquire(3_000L)
             CoverActivity.start(this, CoverActivity.MODE_AOD)
         }
     }
 
     private fun screenOn() {
         val t = SystemClock.elapsedRealtime()
-        if (ScreenPolicy.coverOnScreenOn(prefs, now(), CoverState.aodShowing(t), t - CoverState.aodLaunchedAt)) {
+        if (prefs.lockScreen == LockScreenMode.COVER &&
+            ScreenPolicy.coverOnScreenOn(prefs, now(), CoverState.aodShowing(t), t - CoverState.aodLaunchedAt)
+        ) {
             CoverActivity.start(this, CoverActivity.MODE_LOCK)
         }
     }

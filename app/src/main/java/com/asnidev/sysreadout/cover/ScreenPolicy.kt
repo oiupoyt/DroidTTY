@@ -2,6 +2,7 @@ package com.asnidev.sysreadout.cover
 
 import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.data.LockScreenMode
 
 /** What the phone is doing when the screen turns off or on. */
 data class PhoneNow(
@@ -32,11 +33,11 @@ object ScreenPolicy {
      * the screen-on the always-on display causes.
      */
     fun coverOnScreenOn(p: CoverPrefs, now: PhoneNow, aodShowing: Boolean, sinceAodLaunchMs: Long): Boolean =
-        p.lockCover && now.locked && now.canOverlay && !now.safeMode && !now.inCall &&
+        p.lockScreen == LockScreenMode.COVER && now.locked && now.canOverlay && !now.safeMode && !now.inCall &&
             !aodShowing && sinceAodLaunchMs > AOD_WAKE_MS
 
     /** The always-on display was tapped: go to the cover if it's on and the phone is locked, else unlock. */
-    fun coverAfterAod(p: CoverPrefs, locked: Boolean): Boolean = p.lockCover && locked
+    fun coverAfterAod(p: CoverPrefs, locked: Boolean): Boolean = p.lockScreen == LockScreenMode.COVER && locked
 
     /** The screen-on the always-on display itself triggers arrives within this window. */
     const val AOD_WAKE_MS = 3_000L

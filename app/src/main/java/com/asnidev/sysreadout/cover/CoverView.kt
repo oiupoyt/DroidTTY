@@ -6,11 +6,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -44,6 +47,8 @@ fun CoverView(
     shift: Pair<Dp, Dp> = 0.dp to 0.dp,
     crt: Crt? = styled.theme.crt,
     onAction: ((String) -> Unit)? = null,
+    /** Drawn under the lines, e.g. the own lock's keypad. */
+    bottom: (@Composable () -> Unit)? = null,
 ) {
     val quiet = remember { MutableInteractionSource() }
     Box(
@@ -58,41 +63,57 @@ fun CoverView(
                 .systemBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 24.dp)
                 .offset(shift.first, shift.second),
-            verticalArrangement = if (frame.centered) Arrangement.Center else Arrangement.Top,
         ) {
-            frame.lines.forEach { line ->
-                val style = when (line.role) {
-                    Role.BIG -> styled.clock
-                    Role.DIM -> styled.log.copy(color = styled.date.color)
-                    Role.TEXT, Role.INVERSE -> styled.log
-                }
-                val element = if (line.role == Role.BIG) StyleElement.CLOCK else StyleElement.LOG
-                val inverse = line.role == Role.INVERSE
-                val text = annotated(line, styled.text(element, line.text), styled.accent, blinkOn)
-                val action = line.action
-                Text(
-                    text,
-                    style = style,
-                    color = if (inverse) styled.background else style.color,
-                    textAlign = if (line.align == LineAlign.CENTER) TextAlign.Center else TextAlign.Start,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                    softWrap = false,
-                    modifier = Modifier
-                        .then(if (line.align == LineAlign.CENTER) Modifier.fillMaxWidth() else Modifier)
-                        .then(if (inverse) Modifier.background(style.color) else Modifier)
-                        .then(
-                            if (action != null && onAction != null) {
-                                Modifier.clickable(quiet, null) { onAction(action) }
-                            } else {
-                                Modifier
-                            },
-                        )
-                        .align(if (line.align == LineAlign.CENTER) Alignment.CenterHorizontally else Alignment.Start),
-                )
+            // A boot log keeps its newest line at the bottom edge and lets older ones scroll off the top.
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .then(if (frame.tail) Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true) else Modifier),
+                verticalArrangement = when {
+                    frame.centered -> Arrangement.Center
+                    frame.tail -> Arrangement.Bottom
+                    else -> Arrangement.Top
+                },
+            ) {
+                frame.lines.forEach { line -> CoverText(line, styled, blinkOn, quiet, onAction) }
             }
+            bottom?.invoke()
         }
     }
+}
+
+@Composable
+private fun ColumnScope.CoverText(
+    line: CoverLine,
+    styled: Styled,
+    blinkOn: Boolean,
+    quiet: MutableInteractionSource,
+    onAction: ((String) -> Unit)?,
+) {
+    val style = when (line.role) {
+        Role.BIG -> styled.clock
+        Role.DIM -> styled.log.copy(color = styled.date.color)
+        Role.TEXT, Role.INVERSE -> styled.log
+    }
+    val element = if (line.role == Role.BIG) StyleElement.CLOCK else StyleElement.LOG
+    val inverse = line.role == Role.INVERSE
+    val action = line.action
+    Text(
+        annotated(line, styled.text(element, line.text), styled.accent, blinkOn),
+        style = style,
+        color = if (inverse) styled.background else style.color,
+        textAlign = if (line.align == LineAlign.CENTER) TextAlign.Center else TextAlign.Start,
+        maxLines = 1,
+        overflow = TextOverflow.Clip,
+        softWrap = false,
+        modifier = Modifier
+            .then(if (line.align == LineAlign.CENTER) Modifier.fillMaxWidth() else Modifier)
+            .then(if (inverse) Modifier.background(style.color) else Modifier)
+            .then(if (action != null && onAction != null) Modifier.clickable(quiet, null) { onAction(action) } else Modifier)
+            .align(if (line.align == LineAlign.CENTER) Alignment.CenterHorizontally else Alignment.Start),
+    )
 }
 
 private fun annotated(line: CoverLine, text: String, accent: Color, blinkOn: Boolean): AnnotatedString = buildAnnotatedString {

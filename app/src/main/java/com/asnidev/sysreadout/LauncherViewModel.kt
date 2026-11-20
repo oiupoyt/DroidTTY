@@ -18,6 +18,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.asnidev.sysreadout.apps.AppEntry
 import com.asnidev.sysreadout.apps.AppRepository
+import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.AppKey
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.cover.ScreenService
@@ -129,11 +130,12 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
     /** Completed once the saved settings have reached [prefs] and [monitor] (they start as defaults). */
     private val settingsLoaded = CompletableDeferred<Unit>()
 
-    val shizuku = ShizukuBridge(app)
+    val shizuku = ShizukuBridge(app).also { ShizukuBridge.current = it }
     val engine = LogEngine(
         app, prefs, monitor, apps, shizuku,
         onShizukuTip = { updateMonitor { it.copy(shizukuTip = true) } },
         awaitSettings = { settingsLoaded.await() },
+        coverLook = { cover.value.aodLook.takeIf { cover.value.aodMode != AodMode.OFF } },
     )
 
     private var snapshotAt = 0L

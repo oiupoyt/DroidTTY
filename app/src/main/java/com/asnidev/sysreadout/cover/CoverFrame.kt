@@ -19,6 +19,7 @@ data class CoverLine(
     val action: String? = null,
 )
 
-data class CoverFrame(val lines: List<CoverLine>, val centered: Boolean = false)
+/** [tail]: a boot log that scrolls, so the newest lines stay on screen when there are more than fit. */
+data class CoverFrame(val lines: List<CoverLine>, val centered: Boolean = false, val tail: Boolean = false)
 
 fun blank() = CoverLine("")

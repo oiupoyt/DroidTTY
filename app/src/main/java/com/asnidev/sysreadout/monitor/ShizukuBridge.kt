@@ -394,6 +394,9 @@ class ShizukuBridge(private val context: Context) {
     }
 
     companion object {
+        /** The launcher's bridge, for the lock service's shade (same process); null until the launcher starts. */
+        @Volatile var current: ShizukuBridge? = null
+
         const val PACKAGE = "moe.shizuku.privileged.api"
         private const val TAG = "Shizuku"
         private const val REQUEST_CODE = 7301
