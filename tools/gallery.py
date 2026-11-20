@@ -27,41 +27,87 @@ DIM = (18, 184, 92)
 ACCENT = (26, 255, 128)
 
 W, H = 360, 760  # phone-shaped, roughly 9:19
-SIZE = {"TEXT": 17, "DIM": 17, "INVERSE": 17, "BIG": 64}
-MARGIN = 16
+TOP, BOTTOM = 28, H - 24  # status bar and nav bar room
+MARGIN = 14  # side room, also keeps the glow off the edges
+BIG_RATIO = 64 / 17  # clock size relative to text, as on the phone
+TEXT_MIN, TEXT_MAX = 9, 22
+REF = 100  # measuring size; VT323 widths scale linearly
 
 
 def font(size):
     return ImageFont.truetype(FONT, size)
 
 
-def line_height(role):
-    return int(SIZE[role] * 1.08)
+REF_FONT = font(REF)
 
 
-def render(frame):
+def lead(size):
+    return int(size * 1.08)
+
+
+def full(l):
+    return l["mark"] + l["text"] + ("_" if l["cursor"] else "")
+
+
+def ref_width(l):
+    pad = 4 if l["role"] == "INVERSE" else 0  # inverse bar sticks out 2px each side
+    return REF_FONT.getlength(full(l)) + pad * REF / TEXT_MIN
+
+
+def fit(frames):
+    """One text and clock size for a whole look or preset, so frames don't jitter."""
+    room_w, room_h = W - 2 * MARGIN, BOTTOM - TOP
+    lines = [l for f in frames for l in f["lines"]]
+    text = TEXT_MAX
+    small = [ref_width(l) for l in lines if l["role"] != "BIG"]
+    if small:
+        text = min(text, room_w * REF / max(small))
+    big_w = max((ref_width(l) for l in lines if l["role"] == "BIG"), default=0)
+    if big_w:
+        text = min(text, room_w * REF / (big_w * BIG_RATIO))
+    # Tail frames scroll on purpose, so only the others must fit in height.
+    for f in frames:
+        if f["tail"]:
+            continue
+        n_big = sum(l["role"] == "BIG" for l in f["lines"])
+        n_text = len(f["lines"]) - n_big
+        units = 1.08 * (n_text + n_big * BIG_RATIO)
+        if units:
+            text = min(text, room_h / units)
+    text = int(max(TEXT_MIN, text))
+    big = int(min(text * BIG_RATIO, room_w * REF / big_w if big_w else 1e9))
+    sizes = {"TEXT": text, "DIM": text, "INVERSE": text, "BIG": big}
+    fonts = {r: font(v) for r, v in sizes.items()}
+    # Left edge for START lines: the widest START block of any frame, centred.
+    starts = [fonts[l["role"]].getlength(full(l)) for l in lines if l["align"] == "START"]
+    block = max(starts, default=0)
+    left = max(MARGIN, (W - block) / 2)
+    return sizes, fonts, left
+
+
+def render(frame, layout):
+    sizes, fonts, left = layout
     img = Image.new("RGB", (W, H), BG)
     glow = Image.new("RGB", (W, H), (0, 0, 0))
     draws = [ImageDraw.Draw(img), ImageDraw.Draw(glow)]
     lines = frame["lines"]
-    total = sum(line_height(l["role"]) for l in lines)
-    top, bottom = 34, H - 28
+    total = sum(lead(sizes[l["role"]]) for l in lines)
     if frame["centered"]:
-        y = top + max(0, (bottom - top - total) // 2)
+        y = TOP + max(0, (BOTTOM - TOP - total) // 2)
     elif frame["tail"]:
-        y = bottom - total  # boot logs keep their newest line at the bottom
+        y = BOTTOM - total  # boot logs keep their newest line at the bottom
     else:
-        y = top
+        y = TOP
     for l in lines:
-        h = line_height(l["role"])
-        if y + h < top - 4 or y > bottom:
+        h = lead(sizes[l["role"]])
+        if y < TOP or y + h > BOTTOM:  # only whole lines, never across the margins
             y += h
             continue
-        f = font(SIZE[l["role"]])
+        f = fonts[l["role"]]
         text = l["text"] + ("_" if l["cursor"] else "")
         mark = l["mark"]
         tw = draws[0].textlength(mark + text, font=f)
-        x = (W - tw) / 2 if l["align"] == "CENTER" else MARGIN
+        x = (W - tw) / 2 if l["align"] == "CENTER" else left
         color = DIM if l["role"] == "DIM" else FG
         for d in draws:
             if l["role"] == "INVERSE":
@@ -83,10 +129,11 @@ def write(kind, name, item):
     slug = name.lower()
     frames = item["frames"]
     os.makedirs(os.path.join(OUT, kind), exist_ok=True)
-    still = render(frames[-1] if kind == "lock" else frames[0])
+    layout = fit(frames)
+    still = render(frames[-1] if kind == "lock" else frames[0], layout)
     still.save(os.path.join(OUT, kind, f"{slug}.png"), optimize=True)
     if len(frames) > 1:
-        images = [render(f).convert("P", palette=Image.ADAPTIVE, colors=32) for f in frames]
+        images = [render(f, layout).convert("P", palette=Image.ADAPTIVE, colors=32) for f in frames]
         images[0].save(
             os.path.join(OUT, kind, f"{slug}.gif"),
             save_all=True, append_images=images[1:], duration=item["ms"], loop=0, optimize=True, disposal=1,
