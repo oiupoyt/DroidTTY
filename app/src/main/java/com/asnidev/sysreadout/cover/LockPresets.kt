@@ -348,12 +348,12 @@ object LockPresets {
     private fun panic(d: CoverData, own: Boolean): LockScript {
         val s = Script(tail = true)
         s.line("Kernel panic - not syncing: Attempted to kill init!", 0)
-        s.line("CPU: 0 PID: 1 Comm: init Not tainted ${d.kernel ?: ""}".trimEnd(), 40)
+        s.line("PID: 1 Comm: init Not tainted ${d.kernel ?: ""}".trimEnd(), 40)
         s.line("Hardware name: ${d.manufacturer} ${d.model}".trimEnd(), 40)
         s.line("Call trace:", 40)
         listOf("dump_backtrace", "show_stack", "dump_stack_lvl", "panic", "do_exit", "do_group_exit", "get_signal", "do_notify_resume", "el0_svc")
             .forEach { s.line(" $it", 35, Role.DIM) }
-        s.line("SMP: stopping secondary CPUs", 120)
+        s.line("SMP: stopping secondary cores", 120)
         s.line("Kernel Offset: disabled", 60)
         s.line("---[ end Kernel panic - not syncing: Attempted to kill init! ]---", 200)
         s.line(blank())
@@ -395,15 +395,15 @@ object LockPresets {
     /** "Wake up, Neo." with the phone's name. */
     private fun wakeup(d: CoverData, own: Boolean): LockScript {
         val s = Script()
-        s.type("", "Wake up, ${d.host}...", 400)
-        s.line(blank(), 900)
-        s.type("", "The Matrix has you...", 300)
-        s.line(blank(), 900)
-        s.type("", "Follow the white rabbit.", 300)
-        s.line(blank(), 900)
-        s.type("", "Knock, knock, ${d.host}.", 300)
+        s.type("", "Wake up, ${d.host}...", 300)
+        s.line(blank(), 500)
+        s.type("", "The Matrix has you...", 150)
+        s.line(blank(), 500)
+        s.type("", "Follow the white rabbit.", 150)
+        s.line(blank(), 500)
+        s.type("", "Knock, knock, ${d.host}.", 150)
         if (!own) {
-            s.line(blank(), 600)
+            s.line(blank(), 300)
             s.line(CoverLine("tap to answer", Role.DIM, cursor = true))
         }
         return s.build()
