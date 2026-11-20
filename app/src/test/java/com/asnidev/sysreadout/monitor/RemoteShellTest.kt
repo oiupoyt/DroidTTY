@@ -93,3 +93,24 @@ class ShizukuRouteTest {
         assertFalse(direct(directPaused = true))
     }
 }
+
+class ExitStatusTest {
+    @Test
+    fun onlyAZeroStatusCounts() {
+        assertTrue(ShizukuBridge.exitedOk("ok\n${ShizukuBridge.RC}0\n"))
+        assertFalse(ShizukuBridge.exitedOk("Unknown command: set-location-enabled\n${ShizukuBridge.RC}255\n"))
+        assertFalse("no status at all", ShizukuBridge.exitedOk("something printed"))
+        assertFalse(ShizukuBridge.exitedOk(""))
+    }
+
+    @Test
+    fun aFailingCommandReadsAsFailedThroughTheShell() {
+        val shell = RemoteShell { cmd -> object : RemoteProc {
+            private val p = ProcessBuilder(*cmd).start()
+            override val output = p.inputStream
+            override fun destroy() { p.destroyForcibly() }
+        } }
+        assertTrue(ShizukuBridge.exitedOk(shell.exec("true; echo \"${ShizukuBridge.RC}$?\"", 5_000)!!))
+        assertFalse(ShizukuBridge.exitedOk(shell.exec("false; echo \"${ShizukuBridge.RC}$?\"", 5_000)!!))
+    }
+}

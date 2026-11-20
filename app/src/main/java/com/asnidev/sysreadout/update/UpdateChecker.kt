@@ -38,6 +38,9 @@ class UpdateChecker(private val context: Context) {
         get() = prefs.getBoolean(KEY_ENABLED, true)
         set(v) = prefs.edit().putBoolean(KEY_ENABLED, v).apply()
 
+    /** Android 13+ drops the update notification without this permission; the about page asks for it. */
+    fun canNotify(): Boolean = context.getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+
     /** The release seen at the last check, if it's newer than what's installed. */
     val available: Release?
         get() = prefs.getString(KEY_RELEASE, null)?.let(Release::parse)?.takeIf { Updates.isNewer(it, BuildConfig.VERSION_CODE) }
@@ -120,8 +123,10 @@ class UpdateChecker(private val context: Context) {
         }
         val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return false
         val file = File(dir, "DroidTTY-${r.versionName}.apk")
-        dir.listFiles()?.filter { it.name.endsWith(".apk") && it != file }?.forEach { it.delete() }
-        if (file.exists() && file.length() > 0) {
+        // Only a download the manager reported finished is reused; anything else starts over.
+        val done = prefs.getString(KEY_DONE, null) == file.path
+        dir.listFiles()?.filter { it.name.endsWith(".apk") && !(done && it == file) }?.forEach { it.delete() }
+        if (done && file.exists() && file.length() > 0) {
             install(file)
             return true
         }
@@ -131,10 +136,11 @@ class UpdateChecker(private val context: Context) {
                 .setTitle("DroidTTY ${r.versionName}")
                 .setDescription("update")
                 .setMimeType(APK_MIME)
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+                // Its "complete" notification opens the APK if the installer couldn't open by itself.
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setDestinationUri(Uri.fromFile(file)),
         )
-        prefs.edit().putLong(KEY_DOWNLOAD, id).putString(KEY_FILE, file.path).apply()
+        prefs.edit().putLong(KEY_DOWNLOAD, id).putString(KEY_FILE, file.path).remove(KEY_DONE).apply()
         return true
     }
 
@@ -146,7 +152,12 @@ class UpdateChecker(private val context: Context) {
             c.moveToFirst() && c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL
         } == true
         val file = prefs.getString(KEY_FILE, null)?.let(::File)
-        if (ok && file != null && file.exists()) install(file)
+        if (ok && file != null && file.exists()) {
+            prefs.edit().putString(KEY_DONE, file.path).apply()
+            install(file)
+        } else {
+            file?.delete()
+        }
     }
 
     private fun install(file: File) {
@@ -170,6 +181,7 @@ class UpdateChecker(private val context: Context) {
         private const val KEY_NOTIFIED = "notified_code"
         private const val KEY_DOWNLOAD = "download_id"
         private const val KEY_FILE = "download_file"
+        private const val KEY_DONE = "download_done"
         private const val CHANNEL = "updates"
         private const val NOTIFICATION_ID = 77
         private const val MAX_BYTES = 16 * 1024

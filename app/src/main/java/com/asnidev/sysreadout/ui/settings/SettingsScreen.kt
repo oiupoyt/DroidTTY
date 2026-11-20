@@ -62,7 +62,7 @@ sealed interface Page {
 
     companion object {
         /** Top-level pages by name, for `--es page <name>`. */
-        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku, Cover)
+        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku, Cover, Shade)
             .firstOrNull { it.title.substringBefore(' ') == name.lowercase() }
     }
 }

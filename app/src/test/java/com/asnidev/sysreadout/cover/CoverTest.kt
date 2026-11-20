@@ -529,3 +529,15 @@ class ShadeAndSkipPrefsTest {
         CoverPrefs.DEFAULT_TOGGLES.forEach { assertTrue(it, it in names) }
     }
 }
+
+class LifeCacheTest {
+    private val d = CoverData(now = ZonedDateTime.of(2026, 11, 20, 23, 30, 0, 0, ZoneOffset.UTC), is24h = true)
+
+    @Test
+    fun carryingOnGivesTheSameFramesAsStartingOver() {
+        // Drawn in order (cache used), then out of order (cache dropped): the frames must match.
+        val inOrder = (0..40).map { AsciiAnim.life(d, it * 1_000L) }
+        val backwards = (40 downTo 0).map { AsciiAnim.life(d, it * 1_000L) }.reversed()
+        assertEquals(inOrder, backwards)
+    }
+}

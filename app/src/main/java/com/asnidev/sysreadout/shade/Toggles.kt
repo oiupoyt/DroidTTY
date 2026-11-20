@@ -142,7 +142,7 @@ class Toggles(private val context: Context, private val shizukuOf: () -> Shizuku
         val s = shizuku
         if (s != null && now != null) {
             val cmd = command(t, !now)
-            if (cmd != null && s.exec(cmd) != null) return null
+            if (cmd != null && s.run(cmd)) return null
         }
         return panel(t)
     }
@@ -178,12 +178,12 @@ class Toggles(private val context: Context, private val shizukuOf: () -> Shizuku
     suspend fun setBrightness(level: Float): Boolean {
         val s = shizuku ?: return false
         val v = (level.coerceIn(0.01f, 1f) * 255).toInt()
-        return s.exec("settings put system screen_brightness_mode 0; settings put system screen_brightness $v") != null
+        return s.run("settings put system screen_brightness_mode 0 && settings put system screen_brightness $v")
     }
 
     suspend fun setAutoBrightness(on: Boolean): Boolean {
         val s = shizuku ?: return false
-        return s.exec("settings put system screen_brightness_mode ${if (on) 1 else 0}") != null
+        return s.run("settings put system screen_brightness_mode ${if (on) 1 else 0}")
     }
 
     // --- volume (apps may set these themselves; do-not-disturb can refuse the ring stream) ---
@@ -232,7 +232,7 @@ class Toggles(private val context: Context, private val shizukuOf: () -> Shizuku
     suspend fun bluetoothTap(d: BtDevice): Intent? {
         val s = shizuku ?: return Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
         val cmd = if (d.connected) "cmd bluetooth_manager disconnect ${d.address}" else "cmd bluetooth_manager connect ${d.address}"
-        return if (s.exec(cmd)?.contains("Unknown command", ignoreCase = true) == false) null else Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+        return if (s.run(cmd)) null else Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
     }
 
     // --- wi-fi ---

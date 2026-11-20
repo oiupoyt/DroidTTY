@@ -67,8 +67,12 @@ object AsciiAnim {
     /** Conway's Life from a seed that changes every minute, five generations a second. */
     fun life(d: CoverData, ms: Long): CoverFrame {
         val gen = ((ms % 60_000L) / LIFE_STEP_MS).toInt()
-        var grid = Array(H) { y -> BooleanArray(W) { x -> hash(x + y * W, d.now.minute + 7) > 0.6 } }
-        for (g in 0 until gen) {
+        val minute = d.now.minute
+        // Carry on from the last frame drawn this minute instead of replaying every generation.
+        val cached = lifeCache?.takeIf { it.minute == minute && it.gen <= gen }
+        var grid = cached?.grid?.map { it.copyOf() }?.toTypedArray()
+            ?: Array(H) { y -> BooleanArray(W) { x -> hash(x + y * W, minute + 7) > 0.6 } }
+        for (g in (cached?.gen ?: 0) until gen) {
             // A glider dropped in every couple of seconds, so the board never settles into still blocks.
             if (g % GLIDER_EVERY == GLIDER_EVERY - 1) {
                 val n = g / GLIDER_EVERY
@@ -78,9 +82,15 @@ object AsciiAnim {
             }
             grid = step(grid)
         }
+        lifeCache = LifeState(minute, gen, grid)
         val rows = Array(H) { y -> CharArray(W) { x -> if (grid[y][x]) 'o' else ' ' } }
         return withClock(rows, d)
     }
+
+    private class LifeState(val minute: Int, val gen: Int, val grid: Array<BooleanArray>)
+
+    /** Only the always-on display draws life, on one thread; the result is the same with or without it. */
+    @Volatile private var lifeCache: LifeState? = null
 
     private fun step(g: Array<BooleanArray>): Array<BooleanArray> = Array(H) { y ->
         BooleanArray(W) { x ->

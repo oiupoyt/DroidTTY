@@ -309,6 +309,10 @@ class ShizukuBridge(private val context: Context) {
 
     suspend fun readFile(path: String): String? = call(3_000) { it.readFile(path) }
 
+    /** True only when [command] ran and exited 0; output with errors in it still counts as failed. */
+    suspend fun run(command: String, timeoutMs: Long = 5_000): Boolean =
+        exec("$command; echo \"$RC\$?\"", timeoutMs)?.let(::exitedOk) == true
+
     /** Reverse-DNS names for [ips]; IPs without a PTR record are left out. */
     suspend fun resolve(ips: List<String>): Map<String, String> =
         call(3_000 + CALL_SLACK_MS) { it.resolve(ips.joinToString("\n")) }?.lineSequence()?.mapNotNull { line ->
@@ -406,5 +410,9 @@ class ShizukuBridge(private val context: Context) {
         private const val BIND_TIMEOUT_MS = 15_000L
         private const val FIRST_PAUSE_MS = 30_000L
         private const val MAX_PAUSE_MS = 5 * 60_000L
+        internal const val RC = "__droidtty_rc="
+
+        /** The exit status [run] appends, read from the end of the output. */
+        internal fun exitedOk(out: String): Boolean = out.trimEnd().substringAfterLast(RC, "").trim() == "0"
     }
 }

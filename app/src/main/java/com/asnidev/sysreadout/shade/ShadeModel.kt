@@ -20,6 +20,8 @@ data class ShadeItem(
     val full: String?,
     val ongoing: Boolean,
     val clearable: Boolean,
+    /** Android removes it once it's opened. */
+    val autoCancel: Boolean,
     val open: PendingIntent?,
     val actions: List<Pair<String, PendingIntent>>,
     val reply: Reply?,
@@ -67,6 +69,7 @@ object ShadeModel {
             full = messages ?: lines ?: big ?: text,
             ongoing = sbn.isOngoing,
             clearable = sbn.isClearable,
+            autoCancel = n.flags and Notification.FLAG_AUTO_CANCEL != 0,
             open = n.contentIntent,
             actions = actions,
             reply = reply,

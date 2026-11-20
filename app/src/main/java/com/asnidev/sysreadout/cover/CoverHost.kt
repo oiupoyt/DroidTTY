@@ -65,7 +65,8 @@ class CoverHost(private val service: AccessibilityService) {
     private var togglesMade: Toggles? = null
     private val toggles: Toggles get() = togglesMade ?: Toggles(service) { ShizukuBridge.current }.also { togglesMade = it }
 
-    @Volatile private var prefs = CoverPrefs()
+    // Snapshot state, so the overlays recompose when settings load or change.
+    private var prefs by mutableStateOf(CoverPrefs())
     private var theme by mutableStateOf(Presets.default.theme)
 
     /** Locked by SysReadout's own lock: set at screen off, cleared by the right PIN. */
@@ -96,12 +97,12 @@ class CoverHost(private val service: AccessibilityService) {
         }
     }
 
-    private val shade = OverlayWindow(service, "shade") {
+    private val shade = OverlayWindow(service, "shade", onBack = { closeShade() }) {
         val styled = rememberStyled(theme, 0)
         ShadeContent(styled, toggles, close = ::closeShade, systemShade = ::systemShadeOnPurpose, prefs = prefs)
     }
     private val strip = OverlayWindow(service, "shade strip") {
-        // Any downward pull that starts in the strip opens the shade, as soon as it passes the threshold.
+        // A downward pull that starts on the status bar opens the shade.
         Box(
             Modifier.fillMaxSize().pointerInput(Unit) {
                 awaitEachGesture {
@@ -114,7 +115,7 @@ class CoverHost(private val service: AccessibilityService) {
                             opened = true
                             openShade()
                         }
-                        change.consume()
+                        if (opened) change.consume()
                     } while (change.pressed)
                 }
             },
@@ -195,6 +196,8 @@ class CoverHost(private val service: AccessibilityService) {
 
     fun stop() {
         if (active === this) active = null
+        // Pending pocket, timeout and takeover callbacks would act on windows that are gone.
+        main.removeCallbacksAndMessages(null)
         runCatching { service.unregisterReceiver(events) }
         sensors.unregisterListener(proximity)
         screen.destroy()
@@ -367,7 +370,8 @@ class CoverHost(private val service: AccessibilityService) {
     fun windowChanged(pkg: String?, className: String? = null) {
         if (pkg == null || pkg == service.packageName) return
         if (!ownLocked) {
-            takeOverShade(pkg, className)
+            // Another app came up: the shade is above everything, so it goes.
+            if (pkg != SYSTEM_UI && shade.isShown) closeShade()
             return
         }
         val call = pkg in CALL_PACKAGES || phone().inCall
@@ -391,11 +395,9 @@ class CoverHost(private val service: AccessibilityService) {
      * SysReadout's shade on, close Android's and open ours in its place. Skipped
      * right after [systemShadeOnPurpose], and on the lock screen.
      */
-    private fun takeOverShade(pkg: String, className: String?) {
-        if (!prefs.shade || pkg != SYSTEM_UI || mode != null || keyguard.isKeyguardLocked) return
+    private fun takeOverShade() {
+        if (!prefs.shade || mode != null || keyguard.isKeyguardLocked) return
         if (SystemClock.elapsedRealtime() < systemShadeAllowedUntil) return
-        // SystemUI also raises dialogs (volume, power menu, screenshots, media output); those stay.
-        if (className != null && NOT_SHADE.any { className.contains(it, ignoreCase = true) }) return
         collapseSystemShade()
         // One pull sends several window events; the first one does the swap.
         if (shade.isShown || takeoverPending) return
@@ -419,7 +421,7 @@ class CoverHost(private val service: AccessibilityService) {
             }
             return
         }
-        takeOverShade(SYSTEM_UI, null)
+        takeOverShade()
     }
 
     private fun collapseSystemShade() {
@@ -478,7 +480,8 @@ class CoverHost(private val service: AccessibilityService) {
     private fun syncStrip() {
         val want = prefs.shade && mode == null && !ownLocked && !(keyguard.isKeyguardLocked)
         if (want && !strip.isShown) {
-            strip.show(OverlayWindow.topStrip(statusBarHeight() + (STRIP_EXTRA_DP * service.resources.displayMetrics.density).toInt()))
+            // Exactly the status bar: an app's own toolbar under it keeps every touch.
+            strip.show(OverlayWindow.topStrip(statusBarHeight()))
         } else if (!want && strip.isShown) {
             strip.hide()
         }
@@ -489,6 +492,7 @@ class CoverHost(private val service: AccessibilityService) {
         if (ownLocked || mode != null || keyguard.isKeyguardLocked) return false
         if (shade.isShown) return true
         shade.show(OverlayWindow.fullScreen(focusable = true))
+        shade.rootView?.requestFocus()
         return shade.isShown
     }
 
@@ -510,13 +514,6 @@ class CoverHost(private val service: AccessibilityService) {
         /** Lets Android's shade start collapsing before ours goes on top. */
         private const val TAKEOVER_DELAY_MS = 120L
         private const val SYSTEM_SHADE_GRACE_MS = 30_000L
-        /** SystemUI windows that aren't its shade: dialogs, the volume panel, the power menu, screenshots. */
-        private val NOT_SHADE = listOf(
-            "Dialog", "Volume", "GlobalActions", "PowerMenu", "Screenshot", "Recents", "Toast",
-            "MediaOutput", "Keyguard", "Bouncer", "UsbDebugging", "Permission", "Chooser", "Assist",
-        )
-        /** The strip reaches a little below the status bar, where a finger usually lands. */
-        private const val STRIP_EXTRA_DP = 32
         private const val SYSTEM_UI = "com.android.systemui"
         private val CALL_PACKAGES = setOf("com.android.dialer", "com.google.android.dialer", "com.android.incallui", "com.android.server.telecom")
         private val BLOCKED_KEYS = setOf(

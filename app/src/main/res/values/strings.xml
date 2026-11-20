@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">DroidTTY</string>
     <string name="lock_service_label">DroidTTY: double-tap to lock</string>
-    <string name="lock_service_desc">Lets DroidTTY lock the screen when you double-tap an empty part of the home screen, and draw its always-on display, lock screen and notification shade over other windows. It does not read screen content or anything you type.</string>
+    <string name="lock_service_desc">Lets DroidTTY lock the screen when you double-tap an empty part of the home screen, and draw its always-on display, lock screen and notification shade over other windows. It looks at which kind of window is open and how big it is, never what's in it or anything you type.</string>
     <string name="notif_listener_label">DroidTTY notification log</string>
     <string name="aod_dream_label">DroidTTY always-on display</string>
 </resources>

@@ -237,7 +237,9 @@ fun ShadeContent(
                             item(key = "g:${g.pkg}") {
                                 Text("|## ${appName(context, g.pkg)}", style = styled.log, color = styled.accent, modifier = Modifier.padding(top = 6.dp))
                             }
-                            items(g.items, key = { it.key }) { n -> NotificationRow(styled, n, cols, context) { tick++ } }
+                            items(g.items, key = { it.key }) { n ->
+                                NotificationRow(styled, n, cols, context, changed = { tick++ }, opened = { if (prefs.shadeCloseOnOpen) close() })
+                            }
                         }
                         item(key = "ntf-foot") { Text(Box.bottom(cols), style = styled.log, color = styled.accent, maxLines = 1) }
                     }
@@ -282,7 +284,10 @@ private fun Tile(styled: Styled, label: String, on: Boolean, onClick: () -> Unit
  */
 @Composable
 private fun Slider(styled: Styled, label: String, value: Float, cols: Int, set: (Float) -> Unit) {
-    var shown by remember(value) { mutableFloatStateOf(value) }
+    // One state for the life of the slider: the gesture keeps writing to it, and outside
+    // changes (the level read back after setting it) are copied in.
+    var shown by remember { mutableFloatStateOf(value) }
+    LaunchedEffect(value) { shown = value }
     var width by remember { mutableIntStateOf(1) }
     val cells = (cols - 14).coerceIn(8, 40)
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
@@ -363,7 +368,7 @@ private fun WifiPanel(styled: Styled, toggles: Toggles, tick: Int, open: (Intent
 /** A notification: tap to expand; open, actions, snooze, reply and dismiss under it. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun NotificationRow(styled: Styled, n: ShadeItem, cols: Int, context: Context, changed: () -> Unit) {
+private fun NotificationRow(styled: Styled, n: ShadeItem, cols: Int, context: Context, changed: () -> Unit, opened: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var replying by remember { mutableStateOf(false) }
     var reply by remember { mutableStateOf("") }
@@ -386,8 +391,18 @@ private fun NotificationRow(styled: Styled, n: ShadeItem, cols: Int, context: Co
         }
         if (expanded) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Act(styled, "[open]") { send(context, n.open) }
-                n.actions.forEach { (title, pi) -> Act(styled, "[${title.lowercase(Locale.getDefault())}]") { send(context, pi); changed() } }
+                Act(styled, "[open]") {
+                    send(context, n.open)
+                    // As Android's shade does: an auto-cancel notification goes once it's opened.
+                    if (n.autoCancel) NotifListener.dismiss(n.key)
+                    opened()
+                }
+                n.actions.forEach { (title, pi) ->
+                    Act(styled, "[${title.lowercase(Locale.getDefault())}]") {
+                        send(context, pi)
+                        changed()
+                    }
+                }
                 n.reply?.let { Act(styled, "[${it.label.lowercase(Locale.getDefault())}]") { replying = !replying } }
                 if (n.clearable) {
                     Act(styled, "[snooze 15m]") { NotifListener.snooze(n.key, 15 * 60_000L) }

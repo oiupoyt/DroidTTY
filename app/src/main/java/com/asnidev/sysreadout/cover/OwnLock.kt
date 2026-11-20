@@ -93,8 +93,10 @@ fun OwnLockContent(
     val d = data ?: return
     val s = script ?: return
     val ready = elapsed >= s.readyAt
-    val wait = store.waitMs(now)
-    val left = Lockout.FREE_TRIES - store.failures().first
+    // The failure record is a file: read it when a try is made, not on every animation frame.
+    var failures by remember { mutableStateOf(store.failures()) }
+    val wait = (failures.second + Lockout.delayAfter(failures.first) - now).coerceAtLeast(0L)
+    val left = Lockout.FREE_TRIES - failures.first
     val waitText = when {
         wait > 0 -> "locked out · try again in ${(wait + 999) / 1000}s"
         checking -> "checking..."
@@ -114,6 +116,7 @@ fun OwnLockContent(
                 onUnlocked()
             } else {
                 store.recordFailure(System.currentTimeMillis())
+                failures = store.failures()
                 status = LockPresets.FAILED
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 for (x in listOf(18f, -14f, 10f, -6f, 0f)) shake.animateTo(x, tween(45))

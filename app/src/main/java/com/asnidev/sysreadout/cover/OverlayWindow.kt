@@ -5,6 +5,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.util.Log
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
@@ -26,6 +27,8 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 class OverlayWindow(
     private val context: Context,
     private val name: String,
+    /** Called on the back key while this window has focus. */
+    private val onBack: (() -> Unit)? = null,
     private val content: @Composable () -> Unit,
 ) : LifecycleOwner, SavedStateRegistryOwner {
 
@@ -55,6 +58,17 @@ class OverlayWindow(
             setViewTreeLifecycleOwner(this@OverlayWindow)
             setViewTreeSavedStateRegistryOwner(this@OverlayWindow)
             setContent(content)
+            onBack?.let { back ->
+                isFocusableInTouchMode = true
+                setOnKeyListener { _, code, event ->
+                    if (code == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                        back()
+                        true
+                    } else {
+                        code == KeyEvent.KEYCODE_BACK
+                    }
+                }
+            }
         }
         try {
             wm.addView(fresh, params)

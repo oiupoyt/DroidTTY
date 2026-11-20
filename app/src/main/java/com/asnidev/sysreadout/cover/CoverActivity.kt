@@ -64,7 +64,7 @@ class CoverActivity : ComponentActivity() {
         override fun onSensorChanged(e: SensorEvent) {
             val sensor = e.sensor ?: return
             // In a pocket or face down: dark until the next wake.
-            if (mode == MODE_AOD && e.values.firstOrNull()?.let { it < sensor.maximumRange } == true) {
+            if (mode == MODE_AOD && e.values.firstOrNull()?.let { ScreenPolicy.isNear(it, sensor.maximumRange) } == true) {
                 CoverState.suppressed = true
                 CoverState.aodSeenAt = 0L
                 LockService.lock()

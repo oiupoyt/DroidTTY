@@ -1,5 +1,9 @@
 package com.asnidev.sysreadout.ui.settings
 
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.os.Build
+import android.Manifest
 import com.asnidev.sysreadout.update.Updates
 import com.asnidev.sysreadout.update.UpdateChecker
 import kotlinx.coroutines.launch
@@ -108,9 +112,19 @@ private fun UpdatesSection(updates: UpdateChecker) {
     var checking by remember { mutableStateOf(false) }
 
     Section("updates")
+    val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     Toggle("check for updates", enabled) { v ->
         updates.enabled = v
         enabled = v
+        if (v && !updates.canNotify() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+    if (enabled && !updates.canNotify()) {
+        Note("notifications are off for droidtty, so a new version only shows here.")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Link("allow notifications", "›") { askNotify.launch(Manifest.permission.POST_NOTIFICATIONS) }
+        }
     }
     Note(
         "once a day, droidtty reads one small file from its github releases to see if there's a newer version. " +

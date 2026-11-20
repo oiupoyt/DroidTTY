@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Window events only say which window opened (Android's shade, an app over the
-     own lock) so DroidTTY can close or replace it; window titles and types are read,
-     never their content. -->
+<!-- Window events say which window opened (Android's shade, an app over the own lock)
+     so DroidTTY can close or replace it. Android only lists windows to a service that
+     may retrieve window content; DroidTTY reads their type and size, never their content. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagRequestFilterKeyEvents|flagRetrieveInteractiveWindows"
     android:canRequestFilterKeyEvents="true"
-    android:canRetrieveWindowContent="false"
+    android:canRetrieveWindowContent="true"
     android:description="@string/lock_service_desc"
     android:notificationTimeout="0" />
