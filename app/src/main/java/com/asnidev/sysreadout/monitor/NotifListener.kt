@@ -67,6 +67,11 @@ class NotifListener : NotificationListenerService() {
         fun dismissAll() {
             runCatching { instance?.cancelAllNotifications() }
         }
+
+        /** Hides it for [ms]; Android brings it back by itself. */
+        fun snooze(key: String, ms: Long) {
+            runCatching { instance?.snoozeNotification(key, ms) }
+        }
     }
 }
 

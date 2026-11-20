@@ -41,7 +41,7 @@ object AsciiAnim {
     }
 
     fun starfield(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         for (i in 0 until 70) {
             // Each star has a fixed direction and speed and loops from the centre outward.
@@ -83,7 +83,7 @@ object AsciiAnim {
 
     /** A wireframe cube turning on two axes, drawn with line characters by slope. */
     fun cube(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val a = ms / 1000.0 * 0.9
         val b = ms / 1000.0 * 0.6
         val verts = listOf(-1, 1).flatMap { x -> listOf(-1, 1).flatMap { y -> listOf(-1, 1).map { z -> Triple(x.toDouble(), y.toDouble(), z.toDouble()) } } }
@@ -106,7 +106,7 @@ object AsciiAnim {
 
     /** Drops slide down the glass at their own speeds and leave short trails. */
     fun rain(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         for (i in 0 until 26) {
             val x = (hash(i, 11) * W).toInt()
@@ -127,7 +127,7 @@ object AsciiAnim {
 
     /** Fish swimming both ways, bubbles rising, seaweed swaying. */
     fun aquarium(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         // Seaweed.
         for (s in 0 until 5) {
@@ -166,7 +166,7 @@ object AsciiAnim {
      * cores' average with a little ripple; without, a sine sweep, labelled as such.
      */
     fun scope(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         val load = d.coreLoad.takeIf { it.isNotEmpty() }?.average()
         for (y in listOf(H / 4, H / 2, 3 * H / 4)) for (x in 0 until W) if (x % 2 == 0) rows[y][x] = '.'
@@ -188,7 +188,7 @@ object AsciiAnim {
 
     /** Two paddles that never miss; the score is the time. */
     fun pong(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         val fieldW = W - 2
         val fieldH = H - 2
@@ -227,7 +227,7 @@ object AsciiAnim {
 
     /** A double helix scrolling up, base pairs between the strands. */
     fun helix(d: CoverData, ms: Long): CoverFrame {
-        val rows = blank()
+        val rows = grid()
         val t = ms / 1000.0
         for (y in 0 until H) {
             val ph = y * 0.5 + t * 2.2
@@ -245,7 +245,7 @@ object AsciiAnim {
 
     // --- helpers ---
 
-    private fun blank() = Array(H) { CharArray(W) { ' ' } }
+    private fun grid() = Array(H) { CharArray(W) { ' ' } }
 
     private fun put(rows: Array<CharArray>, x: Int, y: Int, c: Char) {
         if (y in rows.indices && x in rows[y].indices) rows[y][x] = c

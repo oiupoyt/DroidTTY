@@ -468,3 +468,22 @@ class AnimatedLooksTest {
         assertTrue(AsciiAnim.pong(d, 0).lines.any { it.text.contains("21   04") })
     }
 }
+
+class ShadeBoxTest {
+
+    @Test
+    fun boxesFitTheirWidth() {
+        val top = com.asnidev.sysreadout.shade.Box.top("toggles", 20)
+        assertEquals(20, top.length)
+        assertEquals("+-- toggles -------+", top)
+        assertEquals("+------------------+", com.asnidev.sysreadout.shade.Box.bottom(20))
+        assertEquals(10, com.asnidev.sysreadout.shade.Box.top("a very long title indeed", 10).length)
+    }
+
+    @Test
+    fun sliderShowsTheLevel() {
+        assertEquals("[=====-----]", com.asnidev.sysreadout.shade.Box.slider(0.5f, 10))
+        assertEquals("[----------]", com.asnidev.sysreadout.shade.Box.slider(-1f, 10))
+        assertEquals("[==========]", com.asnidev.sysreadout.shade.Box.slider(2f, 10))
+    }
+}
