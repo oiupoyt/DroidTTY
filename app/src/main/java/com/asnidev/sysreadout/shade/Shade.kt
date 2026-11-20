@@ -333,6 +333,7 @@ private fun WifiPanel(styled: Styled, toggles: Toggles, tick: Int, open: (Intent
 }
 
 /** A notification: tap to expand; open, actions, snooze, reply and dismiss under it. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun NotificationRow(styled: Styled, n: ShadeItem, cols: Int, context: Context, changed: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
