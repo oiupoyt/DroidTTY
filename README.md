@@ -42,8 +42,9 @@ From a full CRT terminal to a plain list of apps: every look, the log and each e
 - 11 bundled fonts and your own .ttf/.otf, with size, weight, spacing, case and colour per element.
 - CRT effects: glow, scanlines, curvature, vignette, colour fringe, flicker, grain.
 - Lock screen: your own image, or a snapshot of the log redrawn whenever the screen turns off.
-- Always-on display (minimal clock, terminal status, prompt, log tail), also as Android's screen saver.
-- Lock cover: a boot screen over Android's lock screen (bootline, BIOS flash, DOS prompt, unix login, GRUB menu), then Android's own unlock.
+- Always-on display with nine looks (minimal clock, terminal status, prompt, log tail, neofetch, tty clock, htop meters, matrix rain, binary clock), also as Android's screen saver.
+- Lock screen: ten boot presets (Arch Linux, bootline, BIOS flash, DOS, unix login, GRUB, Commodore 64, kernel panic, ssh, wake up), either over Android's lock or as SysReadout's own PIN lock.
+- Its own notification shade: readout rows, quick toggles, media controls and notifications with their actions.
 
 Everything is explained in the **[user manual](docs/MANUAL.md)**.
 
@@ -72,9 +73,9 @@ Nothing beyond the basics is used until you switch on the feature that needs it,
 | Internet | **only** the optional DNS monitor, which relays your apps' own lookups to your network's own DNS servers (no public fallback) | only if you switch it on |
 | Usage access | screen time, traffic, app switches | you grant it in Android settings |
 | Notification access | notification row, stream and table | you grant it in Android settings |
-| Accessibility (lock service) | double-tap to lock; reads no screen content | you enable it in Android settings |
+| Accessibility (lock service) | double-tap to lock; draws the always-on display, lock screens and shade over other windows; reads no screen content | you enable it in Android settings |
 | Display over other apps | always-on display and lock cover, shown over the lock screen | you grant it in Android settings |
-| Foreground service, notifications | the screen service behind the always-on display and lock cover | only if you switch one on |
+| Foreground service, notifications, wake lock | the fallback screen service, and waking the screen for the always-on display | only if you switch one on |
 | Location | GPS, satellites, Wi-Fi name, nearby networks, cell tower, sunrise rows | asked when you switch one on |
 | Phone | 5G/LTE link details | asked when you switch it on |
 | Bluetooth connect | connected devices and their battery | asked when you switch it on |

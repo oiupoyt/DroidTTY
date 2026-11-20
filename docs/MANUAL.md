@@ -253,30 +253,50 @@ Settings › *lock screen*:
 
 Android's own clock and notifications are drawn on top. Only the lock screen is changed; the home screen is always SysReadout's own drawing.
 
-### Always-on display and lock cover
+### Always-on display, lock screen and shade
 
-Settings › *screen*. Both are off by default. They need *display over other apps* (Android's settings, or Shizuku's one-tap setup) and run a small foreground service, with a silent notification, that hears the screen turning off and on.
+Settings › *screen*. All are off by default.
 
-**Always-on display.** After you turn the screen off, SysReadout turns it back on at very low brightness with one of four looks, drawn in your theme:
+**Access.** Turn on SysReadout's *lock service* (Android's accessibility settings; settings › screen links there). It draws these screens above Android's lock screen and status bar, wakes the screen and reads no screen content. The own lock and the shade need it. Without it, the always-on display and boot screen fall back to *display over other apps* and a small foreground service, which some phones (Nothing OS among them) stop or don't let wake the screen. On Android 13+ an app installed from an APK has the lock service greyed out until you open SysReadout's app info › ⋮ › *Allow restricted settings*.
+
+**Always-on display.** After you turn the screen off, SysReadout turns it back on at very low brightness with one of nine looks, drawn in your theme:
 
 - **minimal clock**: clock, date, battery, waiting notifications
 - **terminal status**: clock and status rows you pick
 - **prompt**: `root@<device>:~$` answering date, battery and notifications, with a blinking cursor
 - **log tail**: clock and the log's newest events from the last time home was open
+- **neofetch**: the Arch logo beside this phone's OS, kernel, uptime, package count, display, CPU, memory and battery
+- **tty clock**: the time in big block digits, seconds ticking underneath
+- **htop meters**: load per CPU core (needs Shizuku), memory and battery as bars
+- **matrix rain**: falling characters around the clock; redraws twice a second, so it uses the most battery
+- **binary clock**: hours, minutes and seconds as binary columns
 
-*Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). It moves a few pixels each minute against burn-in, and leaves out flicker and grain. Tap it to go on. Turning the screen off again or covering the proximity sensor (pocket, face down) keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black.
+*Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). Switch your phone's own always-on display off. It moves a few pixels each minute against burn-in and leaves out flicker and grain. Tap it to go on. Turning the screen off again or covering the proximity sensor keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black. The same looks are offered as Android's screen saver (settings › display › screen saver).
 
-The same looks are offered as Android's screen saver (settings › display › screen saver › *SysReadout always-on display*), which Android shows while charging or docked.
+**Lock screen.** Three modes:
 
-**Lock cover.** Each time the screen turns on while the phone is locked, a boot screen plays over Android's lock screen, then a tap anywhere hands over to Android's own PIN, pattern or fingerprint. Unlocking it never skips Android's lock. Presets:
+- **android's own**: unchanged.
+- **boot screen over android's**: each time the screen turns on while locked, a preset plays over Android's lock screen; tap and Android asks for your PIN or fingerprint. A fingerprint straight away skips it.
+- **sysreadout's own pin lock**: for a phone whose Android screen lock is set to *none*. At every screen off SysReadout locks; the preset plays, then asks for your PIN in its own voice (`Password:`, `Enter Password:`, `C:\>unlock`, `PASSWORD?`…) on a terminal keypad. After 5 wrong PINs each further try waits longer, from 30 seconds doubling up to 15 minutes, also across restarts. *sos* opens the emergency dialer; the lock comes back after 30 seconds unless a call is running, and at the next screen off.
 
-- **bootline**: kernel lines and `[  OK  ]` services from this phone's kernel version, CPU count, memory, storage, network and battery, then a login prompt
-- **bios flash**: a power-on self test that counts up the memory, then flashes the security patch level with a progress bar
+  What it can't do: there's **no fingerprint**, because Android deletes enrolled fingerprints when its own lock is set to none. Your data is **not encrypted** behind this PIN the way Android's lock does it. The lock can be skipped by starting Android in safe mode (which stops accessibility services), from a computer with `adb`, or by turning the lock service off while unlocked; those are also the ways back in if you forget the PIN. The PIN is stored only as a salted PBKDF2 hash, in storage that is never backed up.
+
+Presets (all ten work in both modes):
+
+- **arch linux**: GRUB's *Loading Linux*, the initramfs hooks, *Welcome to Arch Linux!*, a screen of systemd `[  OK  ]` units built around this phone's kernel, storage, network and battery, then the tty1 login
+- **bootline**: kernel lines and `[  OK  ]` services from this phone's kernel, CPU count, memory and storage, then a login prompt
+- **bios flash**: a power-on self test that counts up the memory, then flashes the security patch level
 - **dos prompt**: `C:\>` types `date`, `time`, `ver` and `mem`
 - **unix login**: a getty prompt with your last unlock and waiting notifications
-- **grub menu**: *Android* unlocks, *Camera* opens the secure camera, *Emergency call* opens the emergency dialer
+- **grub menu**: *Android* unlocks, *Camera* opens the secure camera (not offered with the own lock), *Emergency call* opens the emergency dialer
+- **commodore 64**: the start screen with this phone's memory, `LOAD "*",8,1` and `RUN`
+- **kernel panic**: a panic with a call trace, a countdown and the reboot
+- **ssh login**: host-key prompt, then a motd with memory, battery, uptime and storage
+- **wake up**: *Wake up, <phone>... The Matrix has you...* typed out
 
-Every value comes from the phone; one it can't read is left out. Taps during the animation do nothing, so a pocket can't unlock. A fingerprint unlock straight away skips the cover. Settings › screen previews each look and preset.
+Every value comes from the phone; one it can't read is left out. Taps during the animation do nothing. Settings › screen previews each look and preset.
+
+**Notification shade.** SysReadout's own shade: battery, network, memory and uptime rows; quick toggles (Wi-Fi, Bluetooth, mobile data, airplane, location, do not disturb, torch, rotation) and brightness; what's playing with previous/play/next; and your notifications grouped by app, with open, dismiss (`[x]`), their action buttons and *clear all*. It opens from a swipe down on the status bar (with the lock service) or on home. With Shizuku connected the toggles and brightness switch directly; without it a toggle opens Android's panel for it (the torch always switches directly). Replies typed into a notification aren't offered. `[system shade]` opens Android's own. Swipe up or `[close]` to close it.
 
 ## 9. Battery use
 
@@ -284,7 +304,7 @@ Every value comes from the phone; one it can't read is left out. Taps during the
 - Typical cost while visible is a few percent of one CPU core; more with every Shizuku table on at a 2-second refresh.
 - Rows that turn hardware on say so: `gps` and `gnss` keep GPS active while visible; `env` and `compass` read sensors once a second.
 - Flicker and grain are the only effects that redraw continuously.
-- The always-on display keeps the screen lit (dim) while it shows; on battery it stops below the level you set. The lock cover runs for a few seconds each time the screen turns on.
+- The always-on display keeps the screen lit (dim) while it shows; on battery it stops below the level you set. *matrix rain* redraws twice a second, *prompt*, *tty clock* and *binary clock* once a second, the rest once a minute. The lock screen presets run for a few seconds each time the screen turns on.
 
 The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
 
@@ -300,7 +320,8 @@ The *battery drain per app* table (Shizuku) shows SysReadout's own share too.
 | The DNS monitor switches itself off | Another VPN took over, or Private DNS is set to a provider. |
 | `wifi` shows no network name | The `ssid` row needs the location permission *and* location switched on. |
 | *Connecting* never finishes in settings › shizuku | Wait 8 seconds: SysReadout switches to Shizuku's own shell (*direct shell*). If it stays, tap *retry now*, or stop and start Shizuku. |
-| Always-on display or lock cover doesn't appear | Check settings › screen › *display over other apps*. Some phones also need SysReadout's battery setting set to *unrestricted* so Android doesn't stop the screen service. |
+| Always-on display or lock screen doesn't appear | Turn on the *lock service* (settings › screen › access). Switch your phone's own always-on display off. |
+| Forgot the own lock's PIN | Start Android in safe mode (hold volume down while the phone starts), turn SysReadout's lock service off in accessibility settings, restart, then set a new PIN under settings › screen. Or from a computer: `adb shell settings put secure enabled_accessibility_services ''`. |
 | Lock-screen snapshot doesn't show | Some phones override lock-screen wallpapers in their own theme settings; set the lock screen there to use the wallpaper. |
 | Rows are cut off at the bottom | Switch settings › log › *layout* to **feed**, or show fewer rows. |
 | Text over the log is hard to read | Use the *frosted* or *highlight* entry style, or turn down CRT glow. |
