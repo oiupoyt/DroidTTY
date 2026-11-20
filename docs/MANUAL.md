@@ -271,7 +271,7 @@ Settings › *screen*. All are off by default.
 - **matrix rain**: falling characters around the clock; redraws twice a second, so it uses the most battery
 - **binary clock**: hours, minutes and seconds as binary columns
 
-*Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). Also adjustable: *size* (60 to 200%), *brightness* (1 to 40%), *position* (top, middle, bottom), *colour* (the theme's, accent only, dim only, white), *burn-in shift* on or off, and *go dark after* (never, or 1 to 60 minutes). Switch your phone's own always-on display off. It moves a few pixels each minute against burn-in and leaves out flicker and grain. Tap it to go on. Turning the screen off again or covering the proximity sensor keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black. The same looks are offered as Android's screen saver (settings › display › screen saver).
+*Show* is *off*, *while charging* or *always*; on battery it waits for the charger below a level you set (20% by default). Also adjustable: *size* (60 to 200%), *brightness* (1 to 40%), placement (below), *colour* (the theme's, accent only, dim only, white), *burn-in shift* on or off, and *go dark after* (never, or 1 to 60 minutes). Switch your phone's own always-on display off. It moves a few pixels each minute against burn-in and leaves out flicker and grain. Tap it to go on. Turning the screen off again or covering the proximity sensor keeps it dark until the next unlock. It never shows during calls. A lit screen uses more battery than Android's own always-on display, even dim and mostly black. The same looks are offered as Android's screen saver (settings › display › screen saver).
 
 **Lock screen.** Three modes:
 
@@ -296,7 +296,9 @@ Presets (all ten work in both modes):
 - **ssh login**: host-key prompt, then a motd with memory, battery, uptime and storage
 - **wake up**: *Wake up, <phone>... The Matrix has you...* typed out
 
-Every value comes from the phone; one it can't read is left out. Taps during the animation do nothing. Settings › screen previews each look and preset.
+Every value comes from the phone; one it can't read is left out. Taps during the animation do nothing. Settings › screen previews each look and preset in your screen's proportions.
+
+**Placement.** The always-on display and the lock screen each have their own: *vertical* (top, middle, bottom; the lock screen also offers *preset's own*, where boot logs scroll up from the bottom and menus sit in the middle), *horizontal* (left, centre, right; the text moves as one block, so columns stay lined up), *nudge up / down* in 16 dp steps, *nudge left / right* in 8 dp steps and the *side margin*. The own lock adds *keypad*: full width, left hand, right hand or narrow and centred, and *keypad height* to lift it off the bottom edge.
 
 **Status bar clock.** Settings › home › *android status bar* hides Android's status bar, clock included, while the home screen shows (swipe down from the top edge to see it for a moment). With Shizuku connected, *status-bar clock (everywhere)* removes just the clock from the status bar in every app, through the same setting Android's System UI tuner uses.
 

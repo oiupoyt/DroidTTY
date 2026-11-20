@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -29,6 +31,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.asnidev.sysreadout.data.Crt
+import com.asnidev.sysreadout.data.HAlign
+import com.asnidev.sysreadout.data.Placement
+import com.asnidev.sysreadout.data.VAlign
 import com.asnidev.sysreadout.data.StyleElement
 import com.asnidev.sysreadout.ui.Styled
 import com.asnidev.sysreadout.ui.crt
@@ -49,9 +54,24 @@ fun CoverView(
     onAction: ((String) -> Unit)? = null,
     /** Drawn under the lines, e.g. the own lock's keypad. */
     bottom: (@Composable () -> Unit)? = null,
-    /** Where a centered frame sits; the always-on display lets the user choose. */
-    position: Arrangement.Vertical = Arrangement.Center,
+    /** The user's placement; null keeps the frame's own. */
+    place: Placement? = null,
 ) {
+    val margin = place?.margin?.dp ?: DEFAULT_MARGIN
+    val nudgeX = (place?.offsetX ?: 0).dp + shift.first
+    val nudgeY = (place?.offsetY ?: 0).dp + shift.second
+    val vertical = place?.vertical?.let {
+        when (it) {
+            VAlign.TOP -> Arrangement.Top
+            VAlign.CENTER -> Arrangement.Center
+            VAlign.BOTTOM -> Arrangement.Bottom
+        }
+    }
+    val horizontal = when (place?.horizontal) {
+        HAlign.CENTER -> Alignment.CenterHorizontally
+        HAlign.END -> Alignment.End
+        else -> Alignment.Start
+    }
     val quiet = remember { MutableInteractionSource() }
     Box(
         modifier
@@ -63,8 +83,8 @@ fun CoverView(
             Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 24.dp)
-                .offset(shift.first, shift.second),
+                .padding(horizontal = margin, vertical = 24.dp)
+                .offset(nudgeX, nudgeY),
         ) {
             // A boot log keeps its newest line at the bottom edge and lets older ones scroll off the top.
             Column(
@@ -72,14 +92,22 @@ fun CoverView(
                     .weight(1f)
                     .fillMaxWidth()
                     .clipToBounds()
-                    .then(if (frame.tail) Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true) else Modifier),
-                verticalArrangement = when {
-                    frame.centered -> position
+                    .then(
+                        // A boot log that overflows still scrolls from the bottom; one that fits goes where asked.
+                        if (frame.tail) Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true) else Modifier,
+                    ),
+                verticalArrangement = vertical ?: when {
+                    frame.centered -> Arrangement.Center
                     frame.tail -> Arrangement.Bottom
                     else -> Arrangement.Top
                 },
+                horizontalAlignment = horizontal,
             ) {
-                frame.lines.forEach { line -> CoverText(line, styled, blinkOn, quiet, onAction) }
+                // The lines move as one block as wide as the widest line: left edges stay lined
+                // up, and centred lines (clocks) centre within the block wherever it's placed.
+                Column(Modifier.width(IntrinsicSize.Max), horizontalAlignment = Alignment.Start) {
+                    frame.lines.forEach { line -> CoverText(line, styled, blinkOn, quiet, onAction) }
+                }
             }
             bottom?.invoke()
         }
@@ -124,6 +152,8 @@ private fun annotated(line: CoverLine, text: String, accent: Color, blinkOn: Boo
     // The cursor keeps its width while hidden, so the line doesn't jump.
     if (line.cursor) withStyle(SpanStyle(color = if (blinkOn) Color.Unspecified else Color.Transparent)) { append("_") }
 }
+
+private val DEFAULT_MARGIN = 20.dp
 
 /** Burn-in shift for minute [minute]: steps around a small square, one position per minute. */
 fun burnInShift(minute: Long): Pair<Dp, Dp> {

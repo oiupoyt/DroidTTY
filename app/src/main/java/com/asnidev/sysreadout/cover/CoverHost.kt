@@ -83,8 +83,11 @@ class CoverHost(private val service: AccessibilityService) {
             Mode.AOD -> AodContent(prefs, onTap = ::leaveAod) {
                 CoverState.aodSeenAt = SystemClock.elapsedRealtime()
             }
-            Mode.COVER -> LockContent(prefs.lockPreset, onUnlock = ::coverUnlock, onAction = ::coverAction)
-            Mode.OWN -> OwnLockContent(prefs.lockPreset, styled, pins, onUnlocked = ::ownUnlocked)
+            Mode.COVER -> LockContent(prefs.lockPreset, prefs.lockPlace, onUnlock = ::coverUnlock, onAction = ::coverAction)
+            Mode.OWN -> OwnLockContent(
+                prefs.lockPreset, styled, pins, onUnlocked = ::ownUnlocked,
+                place = prefs.lockPlace, keypad = prefs.keypad, keypadLift = prefs.keypadLift,
+            )
             null -> {}
         }
     }

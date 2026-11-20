@@ -118,7 +118,7 @@ class CoverActivity : ComponentActivity() {
                     }
                 }
             } else {
-                LockContent(p.lockPreset, onUnlock = ::unlock, onAction = ::grubAction)
+                LockContent(p.lockPreset, p.lockPlace, onUnlock = ::unlock, onAction = ::grubAction)
             }
         }
     }

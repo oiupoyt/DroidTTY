@@ -1,0 +1,1 @@
+Placement for the always-on display and lock screen: top, middle or bottom, left, centre or right, nudges and side margin. The own lock's keypad can sit on the left or right for one hand, and higher up. Previews use the phone's proportions.

@@ -8,7 +8,46 @@ enum class AodMode { OFF, CHARGING, ALWAYS }
 
 enum class AodLook { CLOCK, STATUS, PROMPT, LOG, NEOFETCH, TTY, HTOP, MATRIX, BINARY }
 
-enum class AodPosition { TOP, CENTER, BOTTOM }
+/**
+ * Where an always-on or lock screen sits. [vertical] null keeps the look's own
+ * placement (boot logs scroll from the bottom, menus sit in the middle). Offsets
+ * and [margin] are dp.
+ */
+data class Placement(
+    val vertical: VAlign? = VAlign.CENTER,
+    val horizontal: HAlign = HAlign.CENTER,
+    val offsetX: Int = 0,
+    val offsetY: Int = 0,
+    val margin: Int = 20,
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        vertical?.let { put("v", it.name) }
+        put("h", horizontal.name).put("x", offsetX).put("y", offsetY).put("margin", margin)
+    }
+
+    companion object {
+        const val STEP_X = 8
+        const val STEP_Y = 16
+        const val STEP_MARGIN = 4
+        val RANGE_X = -64..64
+        val RANGE_Y = -320..320
+        val RANGE_MARGIN = 0..64
+
+        fun fromJson(o: JSONObject?, d: Placement): Placement {
+            if (o == null) return d
+            return Placement(
+                vertical = if (o.has("v")) runCatching { VAlign.valueOf(o.getString("v")) }.getOrDefault(d.vertical) else null,
+                horizontal = runCatching { HAlign.valueOf(o.getString("h")) }.getOrDefault(d.horizontal),
+                offsetX = o.optInt("x", d.offsetX).coerceIn(RANGE_X),
+                offsetY = o.optInt("y", d.offsetY).coerceIn(RANGE_Y),
+                margin = o.optInt("margin", d.margin).coerceIn(RANGE_MARGIN),
+            )
+        }
+    }
+}
+
+/** The own lock's keypad: across the screen, or narrower on one side for one-handed use. */
+enum class KeypadLayout { FULL, LEFT, CENTER, RIGHT }
 
 /** THEME keeps the look's colours; the others paint every line in one colour. */
 enum class AodColor { THEME, ACCENT, DIM, MONO }
@@ -38,12 +77,17 @@ data class CoverPrefs(
     val aodScale: Float = 1f,
     /** Screen brightness while it shows, in percent. */
     val aodBrightness: Int = 2,
-    val aodPosition: AodPosition = AodPosition.CENTER,
+    val aodPlace: Placement = Placement(),
     val aodColor: AodColor = AodColor.THEME,
     /** Move a few dp each minute against burn-in. */
     val aodShift: Boolean = true,
     /** Go dark after this many minutes; 0 keeps it on. */
     val aodTimeoutMin: Int = 0,
+    /** Lock screens keep each preset's own vertical placement until the user picks one. */
+    val lockPlace: Placement = Placement(vertical = null, horizontal = HAlign.START),
+    val keypad: KeypadLayout = KeypadLayout.FULL,
+    /** Raises the own lock's keypad off the bottom edge, in dp. */
+    val keypadLift: Int = 0,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -54,8 +98,9 @@ data class CoverPrefs(
         .put("lockScreen", lockScreen.name).put("lockPreset", lockPreset.name)
         .put("shade", shade)
         .put("aodScale", aodScale.toDouble()).put("aodBrightness", aodBrightness)
-        .put("aodPosition", aodPosition.name).put("aodColor", aodColor.name)
+        .put("aodPlace", aodPlace.toJson()).put("aodColor", aodColor.name)
         .put("aodShift", aodShift).put("aodTimeoutMin", aodTimeoutMin)
+        .put("lockPlace", lockPlace.toJson()).put("keypad", keypad.name).put("keypadLift", keypadLift)
         .toString()
 
     companion object {
@@ -64,6 +109,8 @@ data class CoverPrefs(
         val SCALES = listOf(0.6f, 0.8f, 1f, 1.25f, 1.5f, 2f)
         val BRIGHTNESS = listOf(1, 2, 5, 10, 20, 40)
         val TIMEOUTS = listOf(0, 1, 5, 15, 30, 60)
+        const val STEP_LIFT = 16
+        val RANGE_LIFT = 0..240
 
         fun fromJson(s: String?): CoverPrefs {
             val d = CoverPrefs()
@@ -81,10 +128,17 @@ data class CoverPrefs(
                 shade = o.optBoolean("shade", d.shade),
                 aodScale = o.optDouble("aodScale", d.aodScale.toDouble()).toFloat().coerceIn(SCALES.first(), SCALES.last()),
                 aodBrightness = o.optInt("aodBrightness", d.aodBrightness).coerceIn(1, 100),
-                aodPosition = enumOr(o.optString("aodPosition"), d.aodPosition),
+                // 0.4.1 saved only the vertical position, as "aodPosition".
+                aodPlace = Placement.fromJson(
+                    o.optJSONObject("aodPlace"),
+                    d.aodPlace.copy(vertical = enumOr(o.optString("aodPosition"), VAlign.CENTER)),
+                ),
                 aodColor = enumOr(o.optString("aodColor"), d.aodColor),
                 aodShift = o.optBoolean("aodShift", d.aodShift),
                 aodTimeoutMin = o.optInt("aodTimeoutMin", d.aodTimeoutMin).coerceIn(0, 24 * 60),
+                lockPlace = Placement.fromJson(o.optJSONObject("lockPlace"), d.lockPlace),
+                keypad = enumOr(o.optString("keypad"), d.keypad),
+                keypadLift = o.optInt("keypadLift", d.keypadLift).coerceIn(RANGE_LIFT),
             )
         }
 

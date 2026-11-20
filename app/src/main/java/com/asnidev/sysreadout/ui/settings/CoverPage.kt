@@ -15,7 +15,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -45,7 +45,10 @@ import com.asnidev.sysreadout.cover.PinHash
 import com.asnidev.sysreadout.cover.PinStore
 import com.asnidev.sysreadout.data.AodColor
 import com.asnidev.sysreadout.data.AodLook
-import com.asnidev.sysreadout.data.AodPosition
+import com.asnidev.sysreadout.data.HAlign
+import com.asnidev.sysreadout.data.KeypadLayout
+import com.asnidev.sysreadout.data.Placement
+import com.asnidev.sysreadout.data.VAlign
 import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.LockPreset
@@ -184,7 +187,6 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
     }
     Cycle("size", c.aodScale, CoverPrefs.SCALES, show = { "${(it * 100).toInt()}%" }) { v -> vm.updateCover { it.copy(aodScale = v) } }
     Cycle("brightness", c.aodBrightness, CoverPrefs.BRIGHTNESS, show = { "$it%" }) { v -> vm.updateCover { it.copy(aodBrightness = v) } }
-    Cycle("position", c.aodPosition, AodPosition.entries, show = { it.name.lowercase() }) { v -> vm.updateCover { it.copy(aodPosition = v) } }
     Cycle("colour", c.aodColor, AodColor.entries, show = {
         when (it) {
             AodColor.THEME -> "theme"
@@ -198,6 +200,7 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
         vm.updateCover { it.copy(aodTimeoutMin = v) }
     }
     Note("brightness is a share of the screen's full range; most phones are readable indoors at 2%. the preview below doesn't dim.")
+    PlacementRows(c.aodPlace, keepOwn = false) { v -> vm.updateCover { it.copy(aodPlace = v) } }
     Preview { AodContent(c, onTap = null) }
     Note("android's screen saver can show the same look while charging: settings › display › screen saver › sysreadout.")
     Link("open screen saver settings", "›") {
@@ -245,9 +248,26 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
     if (c.lockScreen != LockScreenMode.OFF) {
         Cycle("preset", c.lockPreset, LockPreset.entries, show = { it.title() }) { v -> vm.updateCover { it.copy(lockPreset = v) } }
         Note(presetNote(c.lockPreset, c.lockScreen == LockScreenMode.OWN))
+        PlacementRows(c.lockPlace, keepOwn = true) { v -> vm.updateCover { it.copy(lockPlace = v) } }
+        if (c.lockScreen == LockScreenMode.OWN) {
+            Cycle("keypad", c.keypad, KeypadLayout.entries, show = {
+                when (it) {
+                    KeypadLayout.FULL -> "full width"
+                    KeypadLayout.LEFT -> "left hand"
+                    KeypadLayout.CENTER -> "narrow, centred"
+                    KeypadLayout.RIGHT -> "right hand"
+                }
+            }) { v -> vm.updateCover { it.copy(keypad = v) } }
+            Stepper(
+                "keypad height",
+                if (c.keypadLift == 0) "bottom" else "+${c.keypadLift}dp",
+                onMinus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift - CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
+                onPlus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift + CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
+            )
+        }
         Link("replay preview", "›") { replay++ }
         key(replay, c.lockPreset) {
-            Preview { LockContent(c.lockPreset, onUnlock = {}, onAction = {}) }
+            Preview { LockContent(c.lockPreset, c.lockPlace, onUnlock = {}, onAction = {}) }
         }
     }
 
@@ -349,11 +369,67 @@ private fun presetNote(p: LockPreset, own: Boolean): String = when (p) {
     LockPreset.WAKEUP -> "wake up, <your phone's name>... the matrix has you. typed out line by line."
 }
 
+/**
+ * Where the screen's text sits: vertical and horizontal position, a nudge in
+ * each direction and the side margin. [keepOwn] offers "preset's own" vertically.
+ */
+@Composable
+private fun PlacementRows(p: Placement, keepOwn: Boolean, set: (Placement) -> Unit) {
+    val verticals = (if (keepOwn) listOf<VAlign?>(null) else emptyList()) + VAlign.entries
+    Cycle("vertical", p.vertical, verticals, show = {
+        when (it) {
+            null -> "preset's own"
+            VAlign.TOP -> "top"
+            VAlign.CENTER -> "middle"
+            VAlign.BOTTOM -> "bottom"
+        }
+    }) { v -> set(p.copy(vertical = v)) }
+    Cycle("horizontal", p.horizontal, HAlign.entries, show = {
+        when (it) {
+            HAlign.START -> "left"
+            HAlign.CENTER -> "centre"
+            HAlign.END -> "right"
+        }
+    }) { v -> set(p.copy(horizontal = v)) }
+    Stepper(
+        "nudge up / down",
+        signed(p.offsetY),
+        onMinus = { set(p.copy(offsetY = (p.offsetY - Placement.STEP_Y).coerceIn(Placement.RANGE_Y))) },
+        onPlus = { set(p.copy(offsetY = (p.offsetY + Placement.STEP_Y).coerceIn(Placement.RANGE_Y))) },
+    )
+    Stepper(
+        "nudge left / right",
+        signed(p.offsetX),
+        onMinus = { set(p.copy(offsetX = (p.offsetX - Placement.STEP_X).coerceIn(Placement.RANGE_X))) },
+        onPlus = { set(p.copy(offsetX = (p.offsetX + Placement.STEP_X).coerceIn(Placement.RANGE_X))) },
+    )
+    Stepper(
+        "side margin",
+        "${p.margin}dp",
+        onMinus = { set(p.copy(margin = (p.margin - Placement.STEP_MARGIN).coerceIn(Placement.RANGE_MARGIN))) },
+        onPlus = { set(p.copy(margin = (p.margin + Placement.STEP_MARGIN).coerceIn(Placement.RANGE_MARGIN))) },
+    )
+    if (p.offsetX != 0 || p.offsetY != 0) {
+        Link("reset nudge", "›") { set(p.copy(offsetX = 0, offsetY = 0)) }
+    }
+}
+
+/** "+16dp" / "-8dp" / "0". */
+private fun signed(dp: Int) = when {
+    dp > 0 -> "+${dp}dp"
+    dp < 0 -> "${dp}dp"
+    else -> "0"
+}
+
 /** A small framed box running the real screen, so the look can be judged without locking the phone. */
 @Composable
 private fun Preview(content: @Composable () -> Unit) {
+    // The phone's own proportions, so top, middle and bottom read as they will on the lock screen.
+    val metrics = LocalContext.current.resources.displayMetrics
+    val ratio = metrics.widthPixels.toFloat() / metrics.heightPixels.coerceAtLeast(1)
     Box(
-        Modifier.padding(vertical = 8.dp).fillMaxWidth().height(320.dp).border(1.dp, Palette.dim.copy(alpha = 0.5f)),
+        Modifier.padding(vertical = 8.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(0.3f, 1f))
+            .border(1.dp, Palette.dim.copy(alpha = 0.5f)),
     ) { content() }
 }
 

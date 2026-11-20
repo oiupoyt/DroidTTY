@@ -339,12 +339,50 @@ class HardeningTest {
 
     @Test
     fun aodOptionsRoundTripAndClamp() {
-        val p = CoverPrefs(aodScale = 1.5f, aodBrightness = 10, aodPosition = com.asnidev.sysreadout.data.AodPosition.TOP,
+        val p = CoverPrefs(aodScale = 1.5f, aodBrightness = 10, aodPlace = com.asnidev.sysreadout.data.Placement(com.asnidev.sysreadout.data.VAlign.TOP),
             aodColor = com.asnidev.sysreadout.data.AodColor.MONO, aodShift = false, aodTimeoutMin = 15)
         assertEquals(p, CoverPrefs.fromJson(p.toJson()))
         val wild = CoverPrefs.fromJson("""{"aodScale":9,"aodBrightness":0,"aodTimeoutMin":-3}""")
         assertEquals(CoverPrefs.SCALES.last(), wild.aodScale)
         assertEquals(1, wild.aodBrightness)
         assertEquals(0, wild.aodTimeoutMin)
+    }
+}
+
+class PlacementTest {
+    private val HAlign = com.asnidev.sysreadout.data.HAlign
+    private val VAlign = com.asnidev.sysreadout.data.VAlign
+
+    @Test
+    fun roundTripsBothScreensAndTheKeypad() {
+        val p = CoverPrefs(
+            aodPlace = com.asnidev.sysreadout.data.Placement(VAlign.BOTTOM, HAlign.END, offsetX = -16, offsetY = 48, margin = 8),
+            lockPlace = com.asnidev.sysreadout.data.Placement(null, HAlign.CENTER, offsetY = -32),
+            keypad = com.asnidev.sysreadout.data.KeypadLayout.RIGHT,
+            keypadLift = 64,
+        )
+        assertEquals(p, CoverPrefs.fromJson(p.toJson()))
+    }
+
+    @Test
+    fun lockKeepsThePresetsOwnPlacementByDefault() {
+        assertEquals(null, CoverPrefs().lockPlace.vertical)
+        assertEquals(null, CoverPrefs.fromJson(CoverPrefs().toJson()).lockPlace.vertical)
+    }
+
+    @Test
+    fun migratesTheOldAodPosition() {
+        assertEquals(VAlign.TOP, CoverPrefs.fromJson("""{"aodPosition":"TOP"}""").aodPlace.vertical)
+        assertEquals(VAlign.CENTER, CoverPrefs.fromJson("{}").aodPlace.vertical)
+    }
+
+    @Test
+    fun clampsWildValues() {
+        val p = CoverPrefs.fromJson("""{"aodPlace":{"x":999,"y":-9999,"margin":-5,"h":"SIDEWAYS"},"keypadLift":5000}""")
+        assertEquals(com.asnidev.sysreadout.data.Placement.RANGE_X.last, p.aodPlace.offsetX)
+        assertEquals(com.asnidev.sysreadout.data.Placement.RANGE_Y.first, p.aodPlace.offsetY)
+        assertEquals(0, p.aodPlace.margin)
+        assertEquals(HAlign.CENTER, p.aodPlace.horizontal)
+        assertEquals(CoverPrefs.RANGE_LIFT.last, p.keypadLift)
     }
 }

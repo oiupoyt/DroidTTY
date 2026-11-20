@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.asnidev.sysreadout.data.KeypadLayout
 import com.asnidev.sysreadout.data.LockPreset
+import com.asnidev.sysreadout.data.Placement
 import com.asnidev.sysreadout.ui.Styled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -52,6 +54,9 @@ fun OwnLockContent(
     styled: Styled,
     store: PinStore,
     onUnlocked: () -> Unit,
+    place: Placement? = null,
+    keypad: KeypadLayout = KeypadLayout.FULL,
+    keypadLift: Int = 0,
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
@@ -127,11 +132,14 @@ fun OwnLockContent(
         styled,
         blinkOn = (elapsed / BLINK_MS) % 2L == 0L,
         modifier = Modifier.offset { IntOffset(shake.value.roundToInt(), 0) },
+        place = place,
         bottom = if (!ready || granted) null else {
             {
                 Keypad(
                     styled,
                     order,
+                    layout = keypad,
+                    lift = keypadLift,
                     enabled = wait == 0L && !checking,
                     typed = typed.length,
                     onDigit = {
@@ -155,29 +163,40 @@ fun OwnLockContent(
 private fun Keypad(
     styled: Styled,
     order: List<Char>,
+    layout: KeypadLayout,
+    lift: Int,
     enabled: Boolean,
     typed: Int,
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // One cell per typed digit, so each press visibly lands.
-        Text(
-            if (typed == 0) "pin" else "pin " + "[*]".repeat(typed),
-            style = styled.log,
-            color = styled.date.color,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        order.take(9).chunked(3).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                row.forEach { c -> Key(c.toString(), styled, enabled, Modifier.weight(1f)) { onDigit(c) } }
+    // One-handed layouts are narrower and sit on the chosen side.
+    val width = if (layout == KeypadLayout.FULL) 1f else ONE_HAND_WIDTH
+    val side = when (layout) {
+        KeypadLayout.LEFT -> Alignment.Start
+        KeypadLayout.RIGHT -> Alignment.End
+        else -> Alignment.CenterHorizontally
+    }
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = lift.dp), horizontalAlignment = side) {
+        Column(Modifier.fillMaxWidth(width), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // One cell per typed digit, so each press visibly lands.
+            Text(
+                if (typed == 0) "pin" else "pin " + "[*]".repeat(typed),
+                style = styled.log,
+                color = styled.date.color,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            order.take(9).chunked(3).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    row.forEach { c -> Key(c.toString(), styled, enabled, Modifier.weight(1f)) { onDigit(c) } }
+                }
             }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Key("del", styled, enabled, Modifier.weight(1f), description = "delete", onClick = onDelete)
-            Key(order[9].toString(), styled, enabled, Modifier.weight(1f)) { onDigit(order[9]) }
-            Key("ret", styled, enabled && typed > 0, Modifier.weight(1f), description = "enter", onClick = onEnter)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Key("del", styled, enabled, Modifier.weight(1f), description = "delete", onClick = onDelete)
+                Key(order[9].toString(), styled, enabled, Modifier.weight(1f)) { onDigit(order[9]) }
+                Key("ret", styled, enabled && typed > 0, Modifier.weight(1f), description = "enter", onClick = onEnter)
+            }
         }
     }
 }
@@ -214,6 +233,7 @@ object Keypad {
 }
 
 private val KEY_HEIGHT = 56.dp
+private const val ONE_HAND_WIDTH = 0.72f
 private const val FRAME_MS = 40L
 private const val BLINK_MS = 530L
 private const val GRANTED_MS = 450L

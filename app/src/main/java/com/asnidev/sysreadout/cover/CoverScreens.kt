@@ -13,11 +13,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.unit.dp
 import com.asnidev.sysreadout.data.AodColor
 import com.asnidev.sysreadout.data.AodLook
-import com.asnidev.sysreadout.data.AodPosition
+import com.asnidev.sysreadout.data.Placement
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.TextSpec
 import com.asnidev.sysreadout.data.LockPreset
@@ -76,7 +75,6 @@ fun AodContent(p: CoverPrefs, onTap: (() -> Unit)?, onShown: () -> Unit = {}) {
     val shown = d.copy(now = CoverData.at(tick - tick % every.coerceAtMost(60_000L)))
     val tap by rememberUpdatedState(onTap)
     CoverView(
-        // Every look follows the chosen position.
         AodFaces.frame(look, shown, tick).copy(centered = true),
         styled,
         // Only the prompt blinks; a constant here spares the other looks a redraw every second.
@@ -84,11 +82,7 @@ fun AodContent(p: CoverPrefs, onTap: (() -> Unit)?, onShown: () -> Unit = {}) {
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(onDoubleTap = { tap?.invoke() }, onTap = { tap?.invoke() }) },
         shift = if (p.aodShift) burnInShift(tick / 60_000L) else 0.dp to 0.dp,
         crt = styled.theme.crt.copy(flicker = 0f, grain = 0f),
-        position = when (p.aodPosition) {
-            AodPosition.TOP -> Arrangement.Top
-            AodPosition.CENTER -> Arrangement.Center
-            AodPosition.BOTTOM -> Arrangement.Bottom
-        },
+        place = p.aodPlace,
     )
 }
 
@@ -117,7 +111,7 @@ private fun aodStyled(base: Styled, scale: Float, color: AodColor): Styled {
 
 /** The lock cover: plays [preset]'s script once, then a tap anywhere (or on a GRUB entry) unlocks. */
 @Composable
-fun LockContent(preset: LockPreset, onUnlock: () -> Unit, onAction: (String) -> Unit) {
+fun LockContent(preset: LockPreset, place: Placement?, onUnlock: () -> Unit, onAction: (String) -> Unit) {
     val context = LocalContext.current
     val styled = rememberCoverStyled()
     val reader = remember { CoverReader(context.applicationContext) }
@@ -147,6 +141,7 @@ fun LockContent(preset: LockPreset, onUnlock: () -> Unit, onAction: (String) -> 
             if (ready) detectTapGestures(onTap = { unlock() })
         },
         onAction = if (ready) onAction else null,
+        place = place,
     )
 }
 
