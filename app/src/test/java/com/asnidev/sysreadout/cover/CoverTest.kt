@@ -326,3 +326,25 @@ class PinTest {
         assertEquals(15 * 60_000L, Lockout.delayAfter(50))
     }
 }
+
+class HardeningTest {
+
+    @Test
+    fun keypadHasEveryDigitOnceInChangingOrders() {
+        val r = java.util.Random(7)
+        val orders = (0 until 20).map { Keypad.shuffled(r) }
+        orders.forEach { assertEquals(('0'..'9').toList(), it.sorted()) }
+        assertTrue(orders.toSet().size > 1)
+    }
+
+    @Test
+    fun aodOptionsRoundTripAndClamp() {
+        val p = CoverPrefs(aodScale = 1.5f, aodBrightness = 10, aodPosition = com.asnidev.sysreadout.data.AodPosition.TOP,
+            aodColor = com.asnidev.sysreadout.data.AodColor.MONO, aodShift = false, aodTimeoutMin = 15)
+        assertEquals(p, CoverPrefs.fromJson(p.toJson()))
+        val wild = CoverPrefs.fromJson("""{"aodScale":9,"aodBrightness":0,"aodTimeoutMin":-3}""")
+        assertEquals(CoverPrefs.SCALES.last(), wild.aodScale)
+        assertEquals(1, wild.aodBrightness)
+        assertEquals(0, wild.aodTimeoutMin)
+    }
+}

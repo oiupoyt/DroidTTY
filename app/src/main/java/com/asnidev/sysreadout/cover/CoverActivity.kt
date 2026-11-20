@@ -20,6 +20,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import com.asnidev.sysreadout.system.SystemActions
 class CoverActivity : ComponentActivity() {
 
     private var mode by mutableStateOf(MODE_LOCK)
+    private var aodBrightness = CoverPrefs().aodBrightness / 100f
     private val keyguard by lazy { getSystemService(KeyguardManager::class.java) }
     private val sensors by lazy { getSystemService(SensorManager::class.java) }
 
@@ -105,8 +107,12 @@ class CoverActivity : ComponentActivity() {
         setContent {
             val prefs by store.cover.collectAsState(initial = null)
             val p = prefs ?: return@setContent
+            LaunchedEffect(p.aodBrightness) {
+                aodBrightness = p.aodBrightness / 100f
+                applyMode()
+            }
             if (mode == MODE_AOD) {
-                AodContent(p.aodLook, p.aodRows, onTap = { leaveAod(p) }) {
+                AodContent(p, onTap = { leaveAod(p) }) {
                     if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                         CoverState.aodSeenAt = SystemClock.elapsedRealtime()
                     }
@@ -157,7 +163,7 @@ class CoverActivity : ComponentActivity() {
             else window.clearFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
         window.attributes = window.attributes.apply {
-            screenBrightness = if (aod) AOD_BRIGHTNESS else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            screenBrightness = if (aod) aodBrightness else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         }
         if (aod) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -206,8 +212,6 @@ class CoverActivity : ComponentActivity() {
         const val MODE_LOCK = "lock"
         private const val EMERGENCY_DIAL = "com.android.phone.EmergencyDialer.DIAL"
 
-        /** Low enough to be easy on the battery, high enough to read indoors. */
-        private const val AOD_BRIGHTNESS = 0.02f
 
         /** From the screen service: needs "display over other apps" to start from the background. */
         fun start(context: Context, mode: String) {

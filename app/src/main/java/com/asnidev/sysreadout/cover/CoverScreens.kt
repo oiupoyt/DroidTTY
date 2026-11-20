@@ -13,7 +13,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.unit.dp
+import com.asnidev.sysreadout.data.AodColor
 import com.asnidev.sysreadout.data.AodLook
+import com.asnidev.sysreadout.data.AodPosition
+import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.data.TextSpec
 import com.asnidev.sysreadout.data.LockPreset
 import com.asnidev.sysreadout.data.Presets
 import com.asnidev.sysreadout.data.SettingsStore
@@ -40,9 +46,11 @@ fun rememberCoverStyled(): Styled {
  * (flicker, grain) are left out: they would redraw 20 times a second.
  */
 @Composable
-fun AodContent(look: AodLook, rows: List<String>, onTap: (() -> Unit)?, onShown: () -> Unit = {}) {
+fun AodContent(p: CoverPrefs, onTap: (() -> Unit)?, onShown: () -> Unit = {}) {
+    val look = p.aodLook
+    val rows = p.aodRows
     val context = LocalContext.current
-    val styled = rememberCoverStyled()
+    val styled = aodStyled(rememberCoverStyled(), p.aodScale, p.aodColor)
     val reader = remember { CoverReader(context.applicationContext) }
     var data by remember { mutableStateOf<CoverData?>(null) }
     var tick by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -68,14 +76,43 @@ fun AodContent(look: AodLook, rows: List<String>, onTap: (() -> Unit)?, onShown:
     val shown = d.copy(now = CoverData.at(tick - tick % every.coerceAtMost(60_000L)))
     val tap by rememberUpdatedState(onTap)
     CoverView(
-        AodFaces.frame(look, shown, tick),
+        // Every look follows the chosen position.
+        AodFaces.frame(look, shown, tick).copy(centered = true),
         styled,
         // Only the prompt blinks; a constant here spares the other looks a redraw every second.
         blinkOn = !blinks || (tick / 1_000L) % 2L == 0L,
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(onDoubleTap = { tap?.invoke() }, onTap = { tap?.invoke() }) },
-        shift = burnInShift(tick / 60_000L),
+        shift = if (p.aodShift) burnInShift(tick / 60_000L) else 0.dp to 0.dp,
         crt = styled.theme.crt.copy(flicker = 0f, grain = 0f),
+        position = when (p.aodPosition) {
+            AodPosition.TOP -> Arrangement.Top
+            AodPosition.CENTER -> Arrangement.Center
+            AodPosition.BOTTOM -> Arrangement.Bottom
+        },
     )
+}
+
+/** The theme resized and, unless THEME, recoloured to one colour for the always-on display. */
+@Composable
+private fun aodStyled(base: Styled, scale: Float, color: AodColor): Styled {
+    val context = LocalContext.current
+    return remember(base, scale, color) {
+        fun TextSpec.adjust(): TextSpec {
+            val c = when (color) {
+                AodColor.THEME -> this.color
+                AodColor.ACCENT -> base.theme.accent
+                AodColor.DIM -> base.theme.date.color
+                AodColor.MONO -> 0xFFFFFFFF
+            }
+            return copy(size = size * scale, color = c)
+        }
+        val t = base.theme
+        Styled(
+            t.copy(clock = t.clock.adjust(), date = t.date.adjust(), log = t.log.adjust(), banner = t.banner.adjust(),
+                accent = if (color == AodColor.THEME) t.accent else t.log.adjust().color),
+            context.applicationContext,
+        )
+    }
 }
 
 /** The lock cover: plays [preset]'s script once, then a tap anywhere (or on a GRUB entry) unlocks. */

@@ -78,8 +78,15 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
         when (dir) {
             Swipe.UP -> vm.screen = Screen.DRAWER
             // SysReadout's own shade when it's on and the lock service can draw it.
-            Swipe.DOWN -> CoverHost.active?.takeIf { vm.cover.value.shade }?.openShade()
-                ?: SystemActions.expandNotifications(context)
+            Swipe.DOWN -> {
+                val opened = vm.cover.value.shade && CoverHost.active?.openShade() == true
+                if (!opened) {
+                    if (vm.cover.value.shade && CoverHost.active == null) {
+                        Toast.makeText(context, "sysreadout shade needs the lock service · settings › screen", Toast.LENGTH_SHORT).show()
+                    }
+                    SystemActions.expandNotifications(context)
+                }
+            }
             Swipe.LEFT -> currentPrefs.swipeLeft?.let(vm::launch)
             Swipe.RIGHT -> currentPrefs.swipeRight?.let(vm::launch)
         }

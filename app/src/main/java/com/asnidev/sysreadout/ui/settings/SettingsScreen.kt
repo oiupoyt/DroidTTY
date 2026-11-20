@@ -35,6 +35,8 @@ import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.LockMode
 import com.asnidev.sysreadout.data.StyleElement
 import com.asnidev.sysreadout.data.VAlign
+import com.asnidev.sysreadout.monitor.ShizukuState
+import com.asnidev.sysreadout.monitor.StatusClock
 import com.asnidev.sysreadout.system.LockScreen
 import com.asnidev.sysreadout.system.LockService
 import com.asnidev.sysreadout.system.SystemActions
@@ -148,6 +150,9 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
 
     Section("home")
     Toggle("clock", prefs.showClock) { v -> vm.update { it.copy(showClock = v) } }
+    Toggle("android status bar", !prefs.hideStatusBar) { v -> vm.update { it.copy(hideStatusBar = !v) } }
+    if (prefs.hideStatusBar) Note("hidden on home, its clock too. swipe down from the top edge to see it for a moment.")
+    StatusClockRow(vm)
     Toggle("date", prefs.showDate) { v -> vm.update { it.copy(showDate = v) } }
     Toggle("log background", prefs.showLog) { v -> vm.update { it.copy(showLog = v) } }
     Cycle("entry style", prefs.entryStyle, EntryStyle.entries) { v -> vm.update { it.copy(entryStyle = v) } }
@@ -234,6 +239,35 @@ private fun LockScreenSection(vm: LauncherViewModel) {
                 Toast.makeText(context, "lock screen updated", Toast.LENGTH_SHORT).show()
             }
             Note("the log, drawn with your theme and crt effects, redrawn each time the screen turns off (at most once a minute). android draws its clock and notifications on top.")
+        }
+    }
+}
+
+/**
+ * Android's status-bar clock, hidden everywhere through the system UI's own icon
+ * blacklist. Needs Shizuku to write that setting; undone the same way.
+ */
+@Composable
+private fun StatusClockRow(vm: LauncherViewModel) {
+    val shizuku by vm.shizuku.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var hidden by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(shizuku) {
+        hidden = if (shizuku == ShizukuState.READY) StatusClock.isHidden(vm.shizuku) else null
+    }
+    val state = hidden
+    if (state == null) {
+        Note("to hide android's status-bar clock in every app, connect shizuku (settings › shizuku).")
+        return
+    }
+    Toggle("status-bar clock (everywhere)", !state) { v ->
+        scope.launch {
+            if (StatusClock.setHidden(vm.shizuku, !v)) {
+                hidden = !v
+            } else {
+                Toast.makeText(context, "the shell refused the change", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

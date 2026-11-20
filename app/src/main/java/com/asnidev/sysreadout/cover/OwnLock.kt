@@ -1,6 +1,12 @@
 package com.asnidev.sysreadout.cover
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,7 +25,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -28,11 +38,13 @@ import com.asnidev.sysreadout.ui.Styled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.security.SecureRandom
+import kotlin.math.roundToInt
 
 /**
  * SysReadout's own lock: the preset plays, then asks for the PIN in its own
- * voice with a terminal keypad. Wrong PINs count toward an escalating wait that
- * survives restarts. Pure UI: [check] does the verifying.
+ * voice on a shuffled terminal keypad. Wrong PINs shake the screen, buzz, and
+ * count toward an escalating wait that survives restarts.
  */
 @Composable
 fun OwnLockContent(
@@ -40,9 +52,9 @@ fun OwnLockContent(
     styled: Styled,
     store: PinStore,
     onUnlocked: () -> Unit,
-    onEmergency: () -> Unit,
 ) {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
     val reader = remember { CoverReader(context.applicationContext) }
     var data by remember { mutableStateOf<CoverData?>(null) }
     var script by remember { mutableStateOf<LockScript?>(null) }
@@ -50,7 +62,11 @@ fun OwnLockContent(
     var typed by remember { mutableStateOf("") }
     var status by remember { mutableStateOf<String?>(null) }
     var checking by remember { mutableStateOf(false) }
+    var granted by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    // A fresh digit order for every lock, so smudges and a watcher learn less.
+    val order = remember { Keypad.shuffled(SecureRandom()) }
+    val shake = remember { Animatable(0f) }
 
     LaunchedEffect(preset) {
         val d = withContext(Dispatchers.IO) { reader.read() }
@@ -68,70 +84,101 @@ fun OwnLockContent(
     val s = script ?: return
     val ready = elapsed >= s.readyAt
     val wait = store.waitMs(now)
-    val waitText = if (wait > 0) "try again in ${(wait + 999) / 1000}s" else null
+    val left = Lockout.FREE_TRIES - store.failures().first
+    val waitText = when {
+        wait > 0 -> "locked out · try again in ${(wait + 999) / 1000}s"
+        checking -> "checking..."
+        else -> null
+    }
 
-    // The PIN is checked on the enter key only, so its length isn't given away.
+    // Checked only on the enter key, so the PIN's length isn't given away.
     if (checking) {
         LaunchedEffect(Unit) {
             val ok = withContext(Dispatchers.Default) { store.read()?.matches(typed) == true }
+            typed = ""
             if (ok) {
                 store.clearFailures()
+                granted = true
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                delay(GRANTED_MS)
                 onUnlocked()
             } else {
                 store.recordFailure(System.currentTimeMillis())
                 status = LockPresets.FAILED
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                for (x in listOf(18f, -14f, 10f, -6f, 0f)) shake.animateTo(x, tween(45))
             }
-            typed = ""
             checking = false
         }
     }
 
-    val frame = s.at(elapsed).let { f ->
-        if (!ready) f else f.copy(lines = f.lines + LockPresets.prompt(preset, d, typed.length, waitText ?: status))
+    val promptLines = when {
+        granted -> listOf(CoverLine("access granted", mark = LockPresets.OK))
+        else -> LockPresets.prompt(preset, d, typed.length, waitText ?: status) +
+            listOfNotNull(
+                if (status == LockPresets.FAILED && wait == 0L && left in 1 until Lockout.FREE_TRIES) {
+                    CoverLine("$left ${if (left == 1) "try" else "tries"} before a wait", Role.DIM)
+                } else null,
+            )
     }
+    val frame = s.at(elapsed).let { f -> if (!ready) f else f.copy(lines = f.lines + promptLines) }
     CoverView(
         frame,
         styled,
         blinkOn = (elapsed / BLINK_MS) % 2L == 0L,
-        onAction = { if (it == LockPresets.ACTION_EMERGENCY) onEmergency() },
-        bottom = if (!ready) null else {
+        modifier = Modifier.offset { IntOffset(shake.value.roundToInt(), 0) },
+        bottom = if (!ready || granted) null else {
             {
                 Keypad(
                     styled,
+                    order,
                     enabled = wait == 0L && !checking,
-                    onDigit = { if (typed.length < PinHash.MAX_LENGTH) typed += it; status = null },
-                    onDelete = { typed = typed.dropLast(1) },
+                    typed = typed.length,
+                    onDigit = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (typed.length < PinHash.MAX_LENGTH) typed += it
+                        status = null
+                    },
+                    onDelete = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        typed = typed.dropLast(1)
+                    },
                     onEnter = { if (typed.isNotEmpty()) checking = true },
-                    onEmergency = onEmergency,
                 )
             }
         },
     )
 }
 
-/** Digits in a terminal grid; `del` and `ret` in place of symbols, `sos` for the emergency dialer. */
+/** Digits in a terminal grid, in a shuffled order; `del` and `ret` in place of symbols. */
 @Composable
 private fun Keypad(
     styled: Styled,
+    order: List<Char>,
     enabled: Boolean,
+    typed: Int,
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onEnter: () -> Unit,
-    onEmergency: () -> Unit,
 ) {
-    val rows = listOf("123", "456", "789")
     Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        rows.forEach { row ->
+        // One cell per typed digit, so each press visibly lands.
+        Text(
+            if (typed == 0) "pin" else "pin " + "[*]".repeat(typed),
+            style = styled.log,
+            color = styled.date.color,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        order.take(9).chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 row.forEach { c -> Key(c.toString(), styled, enabled, Modifier.weight(1f)) { onDigit(c) } }
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Key("del", styled, enabled, Modifier.weight(1f), description = "delete", onClick = onDelete)
-            Key("0", styled, enabled, Modifier.weight(1f)) { onDigit('0') }
-            Key("ret", styled, enabled, Modifier.weight(1f), description = "enter", onClick = onEnter)
+            Key(order[9].toString(), styled, enabled, Modifier.weight(1f)) { onDigit(order[9]) }
+            Key("ret", styled, enabled && typed > 0, Modifier.weight(1f), description = "enter", onClick = onEnter)
         }
-        Key("sos", styled, true, Modifier.fillMaxWidth(), description = "emergency call", onClick = onEmergency)
     }
 }
 
@@ -144,19 +191,29 @@ private fun Key(
     description: String = label,
     onClick: () -> Unit,
 ) {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
     val ink = if (enabled) styled.log.color else styled.date.color
     Box(
         modifier
             .height(KEY_HEIGHT)
+            // The pressed key fills in, the terminal way of showing a keypress.
+            .background(if (pressed && enabled) ink else Color.Transparent)
             .border(1.dp, ink.copy(alpha = 0.6f))
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(source, null, enabled = enabled, onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
-        Text("[ $label ]", style = styled.log, color = ink)
+        Text("[ $label ]", style = styled.log, color = if (pressed && enabled) styled.background else ink)
     }
 }
 
-private val KEY_HEIGHT = 52.dp
+object Keypad {
+    /** The ten digits in a random order. */
+    fun shuffled(random: java.util.Random): List<Char> = ('0'..'9').toMutableList().apply { shuffle(random) }
+}
+
+private val KEY_HEIGHT = 56.dp
 private const val FRAME_MS = 40L
 private const val BLINK_MS = 530L
+private const val GRANTED_MS = 450L

@@ -44,7 +44,7 @@ class AodDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
             setContent {
                 val prefs by store.cover.collectAsState(initial = null)
                 val p = prefs ?: return@setContent
-                AodContent(p.aodLook, p.aodRows, onTap = ::finish)
+                AodContent(p, onTap = ::finish)
             }
         }
         setContentView(view)

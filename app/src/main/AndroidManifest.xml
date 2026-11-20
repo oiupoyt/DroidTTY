@@ -130,6 +130,16 @@
             android:taskAffinity="com.sysreadout.cover"
             android:theme="@style/Theme.SysReadout.Cover" />
 
+        <!-- Invisible: opens Android's PIN pad straight from the boot screen. -->
+        <activity
+            android:name=".cover.UnlockActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:noHistory="true"
+            android:taskAffinity="com.sysreadout.unlock"
+            android:theme="@style/Theme.SysReadout.Unlock" />
+
         <service
             android:name=".cover.ScreenService"
             android:exported="false"

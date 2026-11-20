@@ -65,6 +65,7 @@ class SettingsStore(private val context: Context) {
         val logLayout = stringPreferencesKey("log_layout")
         val feedTop = booleanPreferencesKey("feed_newest_at_top")
         val cover = stringPreferencesKey("cover")
+        val hideStatusBar = booleanPreferencesKey("hide_status_bar")
     }
 
     val prefs: Flow<LauncherPrefs> = data.map(::read)
@@ -130,6 +131,7 @@ class SettingsStore(private val context: Context) {
             lockMode = enumOr(p[K.lockMode], d.lockMode),
             logLayout = enumOr(p[K.logLayout], d.logLayout),
             feedNewestAtTop = p[K.feedTop] ?: d.feedNewestAtTop,
+            hideStatusBar = p[K.hideStatusBar] ?: d.hideStatusBar,
         )
     }
 
@@ -158,6 +160,7 @@ class SettingsStore(private val context: Context) {
         p[K.lockMode] = v.lockMode.name
         p[K.logLayout] = v.logLayout.name
         p[K.feedTop] = v.feedNewestAtTop
+        p[K.hideStatusBar] = v.hideStatusBar
     }
 
     private inline fun <reified E : Enum<E>> enumOr(name: String?, default: E): E =

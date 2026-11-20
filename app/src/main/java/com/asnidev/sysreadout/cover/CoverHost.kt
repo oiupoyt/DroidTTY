@@ -12,14 +12,16 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.MediaStore
 import android.provider.Settings
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import android.view.KeyEvent
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
@@ -78,11 +80,11 @@ class CoverHost(private val service: AccessibilityService) {
     private val screen = OverlayWindow(service, "screen") {
         val styled = rememberStyled(if (CrashGuard.isSafeMode(service)) Presets.default.theme else theme, 0)
         when (mode) {
-            Mode.AOD -> AodContent(prefs.aodLook, prefs.aodRows, onTap = ::leaveAod) {
+            Mode.AOD -> AodContent(prefs, onTap = ::leaveAod) {
                 CoverState.aodSeenAt = SystemClock.elapsedRealtime()
             }
             Mode.COVER -> LockContent(prefs.lockPreset, onUnlock = ::coverUnlock, onAction = ::coverAction)
-            Mode.OWN -> OwnLockContent(prefs.lockPreset, styled, pins, onUnlocked = ::ownUnlocked, onEmergency = ::emergency)
+            Mode.OWN -> OwnLockContent(prefs.lockPreset, styled, pins, onUnlocked = ::ownUnlocked)
             null -> {}
         }
     }
@@ -95,11 +97,23 @@ class CoverHost(private val service: AccessibilityService) {
         })
     }
     private val strip = OverlayWindow(service, "shade strip") {
+        // Any downward pull that starts in the strip opens the shade, as soon as it passes the threshold.
         Box(
             Modifier.fillMaxSize().pointerInput(Unit) {
-                var drag = 0f
-                detectVerticalDragGestures(onDragStart = { drag = 0f }, onDragEnd = { if (drag > 40f) openShade() }) { _, dy -> drag += dy }
-            }.pointerInput(Unit) { detectTapGestures { } },
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var opened = false
+                    do {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!opened && change.position.y - down.position.y > PULL_PX) {
+                            opened = true
+                            openShade()
+                        }
+                        change.consume()
+                    } while (change.pressed)
+                }
+            },
         )
     }
 
@@ -147,13 +161,17 @@ class CoverHost(private val service: AccessibilityService) {
                 val was = prefs
                 prefs = c
                 theme = t
+                runCatching {
+                    val f = java.io.File(service.noBackupFilesDir, OWN_ON_FILE)
+                    if (c.lockScreen == LockScreenMode.OWN) f.writeText("1") else f.delete()
+                }
                 syncStrip()
                 // The own lock was just switched on: it starts with the next screen off, not mid-use.
                 if (was.lockScreen == LockScreenMode.OWN && c.lockScreen != LockScreenMode.OWN && mode == Mode.OWN) ownUnlocked()
             }
         }
-        // Restarted (crash, update) while the own lock was up: lock again rather than open the phone.
-        if (pins.isSet && wasOwnLocked()) lockOwn()
+        // Restarted (crash, update, reboot) with the own lock on: start locked rather than open.
+        if (pins.isSet && (wasOwnLocked() || ownLockWanted())) lockOwn()
     }
 
     fun stop() {
@@ -239,12 +257,26 @@ class CoverHost(private val service: AccessibilityService) {
             "sysreadout:aod",
         ).apply { runCatching { acquire(AOD_WAKE_LOCK_MS) } }
         mode = Mode.AOD
-        screen.show(OverlayWindow.fullScreen(focusable = false, turnScreenOn = true, keepOn = true, brightness = AOD_BRIGHTNESS))
+        screen.show(
+            OverlayWindow.fullScreen(focusable = false, turnScreenOn = true, keepOn = true, brightness = prefs.aodBrightness / 100f),
+        )
+        main.removeCallbacks(aodTimeout)
+        if (prefs.aodTimeoutMin > 0) main.postDelayed(aodTimeout, prefs.aodTimeoutMin * 60_000L)
         sensors.getDefaultSensor(Sensor.TYPE_PROXIMITY)?.let { sensors.registerListener(proximity, it, SensorManager.SENSOR_DELAY_NORMAL) }
+    }
+
+    /** The timeout ran out: dark until the next unlock, as if the user had switched the screen off. */
+    private val aodTimeout = Runnable {
+        if (mode == Mode.AOD) {
+            CoverState.suppressed = true
+            afterAod()
+            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
+        }
     }
 
     /** Leaves the always-on display: to the own lock or cover if they're on, else to Android. */
     private fun afterAod() {
+        main.removeCallbacks(aodTimeout)
         sensors.unregisterListener(proximity)
         releaseWake()
         CoverState.aodSeenAt = 0L
@@ -255,6 +287,7 @@ class CoverHost(private val service: AccessibilityService) {
     }
 
     private fun leaveAod() {
+        main.removeCallbacks(aodTimeout)
         sensors.unregisterListener(proximity)
         releaseWake()
         CoverState.aodSeenAt = 0L
@@ -272,14 +305,18 @@ class CoverHost(private val service: AccessibilityService) {
 
     // --- cover over Android's lock ---
 
-    /** Uncovers Android's lock screen, which then takes the fingerprint, PIN or swipe as usual. */
-    private fun coverUnlock() = hideScreen()
+    /** Uncovers Android's lock and opens its PIN pad and fingerprint straight away. */
+    private fun coverUnlock() {
+        hideScreen()
+        if (keyguard.isKeyguardLocked) UnlockActivity.start(service)
+    }
 
     private fun coverAction(action: String) {
         when (action) {
             LockPresets.ACTION_UNLOCK -> coverUnlock()
             LockPresets.ACTION_CAMERA -> if (SystemActions.open(service, Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE))) hideScreen()
-            LockPresets.ACTION_EMERGENCY -> emergency()
+            // Android's own lock screen has the emergency call button; uncovering it gets there.
+            LockPresets.ACTION_EMERGENCY -> hideScreen()
         }
     }
 
@@ -300,17 +337,33 @@ class CoverHost(private val service: AccessibilityService) {
         hideScreen()
     }
 
-    /** Hides the lock while the emergency dialer is up; it comes back on its own unless a call is running. */
-    private fun emergency() {
-        val dial = Intent(EMERGENCY_DIAL)
-        if (!SystemActions.open(service, dial) && !SystemActions.open(service, Intent(Intent.ACTION_DIAL))) return
-        hideScreen()
-        main.postDelayed(object : Runnable {
-            override fun run() {
-                if (!ownLocked || mode != null) return
-                if (phone().inCall) main.postDelayed(this, EMERGENCY_MS) else showScreen(Mode.OWN)
+    /**
+     * Something opened while the own lock is up (Android's shade, recents, an app from
+     * a notification, an incoming call screen): close what can be closed and keep the
+     * lock window on top. Calls are let through so they can be answered.
+     */
+    fun windowChanged(pkg: String?) {
+        if (!ownLocked || pkg == null || pkg == service.packageName) return
+        if (phone().inCall || pkg in CALL_PACKAGES) return
+        if (pkg == SYSTEM_UI) {
+            // The status bar shade or quick settings: Android's own collapse action closes them.
+            val collapse = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE
+            } else {
+                AccessibilityService.GLOBAL_ACTION_BACK
             }
-        }, EMERGENCY_MS)
+            service.performGlobalAction(collapse)
+        } else {
+            // An app came up behind the lock; going home puts SysReadout's own home screen there.
+            service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+        }
+        if (mode != Mode.OWN || !screen.isShown) showScreen(Mode.OWN)
+    }
+
+    /** While the own lock is up, the volume keys are left alone and nothing else gets through. */
+    fun keyEvent(e: KeyEvent): Boolean {
+        if (!ownLocked || mode != Mode.OWN) return false
+        return e.keyCode in BLOCKED_KEYS
     }
 
     private fun markOwnLocked(locked: Boolean) {
@@ -321,6 +374,9 @@ class CoverHost(private val service: AccessibilityService) {
     }
 
     private fun wasOwnLocked(): Boolean = java.io.File(service.noBackupFilesDir, "lock_engaged").exists()
+
+    /** Settings load asynchronously; this file says the own lock is on before they do. */
+    private fun ownLockWanted(): Boolean = java.io.File(service.noBackupFilesDir, OWN_ON_FILE).exists()
 
     // --- windows ---
 
@@ -342,15 +398,17 @@ class CoverHost(private val service: AccessibilityService) {
     private fun syncStrip() {
         val want = prefs.shade && mode == null && !ownLocked && !(keyguard.isKeyguardLocked)
         if (want && !strip.isShown) {
-            strip.show(OverlayWindow.topStrip(statusBarHeight()))
+            strip.show(OverlayWindow.topStrip(statusBarHeight() + (STRIP_EXTRA_DP * service.resources.displayMetrics.density).toInt()))
         } else if (!want && strip.isShown) {
             strip.hide()
         }
     }
 
-    fun openShade() {
-        if (ownLocked || mode != null) return
+    /** False when it can't open now (locked, or a lock or always-on screen is up). */
+    fun openShade(): Boolean {
+        if (ownLocked || mode != null || keyguard.isKeyguardLocked) return false
         shade.show(OverlayWindow.fullScreen(focusable = true))
+        return shade.isShown
     }
 
     fun closeShade() {
@@ -364,10 +422,18 @@ class CoverHost(private val service: AccessibilityService) {
     }
 
     companion object {
-        private const val AOD_BRIGHTNESS = 0.02f
         private const val AOD_WAKE_LOCK_MS = 10 * 60_000L
-        private const val EMERGENCY_MS = 30_000L
-        private const val EMERGENCY_DIAL = "com.android.phone.EmergencyDialer.DIAL"
+
+        private const val OWN_ON_FILE = "lock_own_on"
+        private const val PULL_PX = 40f
+        /** The strip reaches a little below the status bar, where a finger usually lands. */
+        private const val STRIP_EXTRA_DP = 16
+        private const val SYSTEM_UI = "com.android.systemui"
+        private val CALL_PACKAGES = setOf("com.android.dialer", "com.google.android.dialer", "com.android.incallui", "com.android.server.telecom")
+        private val BLOCKED_KEYS = setOf(
+            KeyEvent.KEYCODE_HOME, KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_APP_SWITCH, KeyEvent.KEYCODE_MENU,
+            KeyEvent.KEYCODE_SEARCH, KeyEvent.KEYCODE_ASSIST, KeyEvent.KEYCODE_CAMERA,
+        )
 
         @Volatile var active: CoverHost? = null
             private set

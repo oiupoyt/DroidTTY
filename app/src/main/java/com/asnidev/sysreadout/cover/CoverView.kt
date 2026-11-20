@@ -49,6 +49,8 @@ fun CoverView(
     onAction: ((String) -> Unit)? = null,
     /** Drawn under the lines, e.g. the own lock's keypad. */
     bottom: (@Composable () -> Unit)? = null,
+    /** Where a centered frame sits; the always-on display lets the user choose. */
+    position: Arrangement.Vertical = Arrangement.Center,
 ) {
     val quiet = remember { MutableInteractionSource() }
     Box(
@@ -72,7 +74,7 @@ fun CoverView(
                     .clipToBounds()
                     .then(if (frame.tail) Modifier.wrapContentHeight(Alignment.Bottom, unbounded = true) else Modifier),
                 verticalArrangement = when {
-                    frame.centered -> Arrangement.Center
+                    frame.centered -> position
                     frame.tail -> Arrangement.Bottom
                     else -> Arrangement.Top
                 },

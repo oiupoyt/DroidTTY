@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.asnidev.sysreadout.ui.Drawer
 import com.asnidev.sysreadout.ui.HomeScreen
 import com.asnidev.sysreadout.ui.LogBackdrop
@@ -159,6 +161,18 @@ private fun LauncherRoot(vm: LauncherViewModel, activity: ComponentActivity) {
             SystemBarStyle.dark(transparent)
         }
         activity.enableEdgeToEdge(bars, bars)
+    }
+
+    // Status bar hidden on home if the user asked; it comes back on a swipe from the top edge.
+    LaunchedEffect(prefs.hideStatusBar) {
+        WindowInsetsControllerCompat(activity.window, activity.window.decorView).apply {
+            if (prefs.hideStatusBar) {
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                hide(WindowInsetsCompat.Type.statusBars())
+            } else {
+                show(WindowInsetsCompat.Type.statusBars())
+            }
+        }
     }
 
     // A launcher never backs out of itself; Back only closes overlays.

@@ -10,6 +10,10 @@
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
+    <!-- Nothing drawn: Android's own PIN pad shows through. -->
+    <style name="Theme.SysReadout.Unlock" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
     <color name="bg">#FF050807</color>
     <color name="icon_fg">#FF3DFF8A</color>
 </resources>

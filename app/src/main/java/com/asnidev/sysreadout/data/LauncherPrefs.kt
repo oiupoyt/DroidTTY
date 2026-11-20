@@ -61,6 +61,8 @@ data class LauncherPrefs(
     val logLayout: LogLayout = LogLayout.CLASSIC,
     /** Feed layout: new rows enter at the top (true) or at the bottom. */
     val feedNewestAtTop: Boolean = true,
+    /** Hide Android's status bar (and its clock) while home shows; a swipe from the top brings it back briefly. */
+    val hideStatusBar: Boolean = false,
 ) {
     companion object {
         val INTERVALS = listOf(1, 2, 5, 10)

@@ -43,7 +43,9 @@ import com.asnidev.sysreadout.cover.CoverHost
 import com.asnidev.sysreadout.cover.LockContent
 import com.asnidev.sysreadout.cover.PinHash
 import com.asnidev.sysreadout.cover.PinStore
+import com.asnidev.sysreadout.data.AodColor
 import com.asnidev.sysreadout.data.AodLook
+import com.asnidev.sysreadout.data.AodPosition
 import com.asnidev.sysreadout.data.AodMode
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.LockPreset
@@ -180,7 +182,23 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
             SettingRow("  ${probe.id}", "[ ]") { vm.updateCover { it.copy(aodRows = it.aodRows + probe.id) } }
         }
     }
-    Preview { AodContent(c.aodLook, c.aodRows, onTap = null) }
+    Cycle("size", c.aodScale, CoverPrefs.SCALES, show = { "${(it * 100).toInt()}%" }) { v -> vm.updateCover { it.copy(aodScale = v) } }
+    Cycle("brightness", c.aodBrightness, CoverPrefs.BRIGHTNESS, show = { "$it%" }) { v -> vm.updateCover { it.copy(aodBrightness = v) } }
+    Cycle("position", c.aodPosition, AodPosition.entries, show = { it.name.lowercase() }) { v -> vm.updateCover { it.copy(aodPosition = v) } }
+    Cycle("colour", c.aodColor, AodColor.entries, show = {
+        when (it) {
+            AodColor.THEME -> "theme"
+            AodColor.ACCENT -> "accent only"
+            AodColor.DIM -> "dim only"
+            AodColor.MONO -> "white"
+        }
+    }) { v -> vm.updateCover { it.copy(aodColor = v) } }
+    Toggle("burn-in shift", c.aodShift) { v -> vm.updateCover { it.copy(aodShift = v) } }
+    Cycle("go dark after", c.aodTimeoutMin, CoverPrefs.TIMEOUTS, show = { if (it == 0) "never" else "$it min" }) { v ->
+        vm.updateCover { it.copy(aodTimeoutMin = v) }
+    }
+    Note("brightness is a share of the screen's full range; most phones are readable indoors at 2%. the preview below doesn't dim.")
+    Preview { AodContent(c, onTap = null) }
     Note("android's screen saver can show the same look while charging: settings › display › screen saver › sysreadout.")
     Link("open screen saver settings", "›") {
         SystemActions.open(context, Intent(Settings.ACTION_DREAM_SETTINGS))

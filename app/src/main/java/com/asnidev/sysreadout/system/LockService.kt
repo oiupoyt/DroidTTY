@@ -3,6 +3,7 @@ package com.asnidev.sysreadout.system
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.os.Build
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import com.asnidev.sysreadout.cover.CoverHost
 import java.lang.ref.WeakReference
@@ -34,7 +35,11 @@ class LockService : AccessibilityService() {
         super.onDestroy()
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) host?.windowChanged(event.packageName?.toString())
+    }
+
+    override fun onKeyEvent(event: KeyEvent): Boolean = host?.keyEvent(event) ?: false
     override fun onInterrupt() {}
 
     companion object {

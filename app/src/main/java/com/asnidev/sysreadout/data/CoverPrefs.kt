@@ -8,6 +8,11 @@ enum class AodMode { OFF, CHARGING, ALWAYS }
 
 enum class AodLook { CLOCK, STATUS, PROMPT, LOG, NEOFETCH, TTY, HTOP, MATRIX, BINARY }
 
+enum class AodPosition { TOP, CENTER, BOTTOM }
+
+/** THEME keeps the look's colours; the others paint every line in one colour. */
+enum class AodColor { THEME, ACCENT, DIM, MONO }
+
 enum class LockPreset { ARCH, BOOTLINE, BIOS, DOS, LOGIN, GRUB, C64, PANIC, SSH, WAKEUP }
 
 /**
@@ -29,6 +34,16 @@ data class CoverPrefs(
     val lockPreset: LockPreset = LockPreset.ARCH,
     /** SysReadout's shade opens from a swipe down on the status bar and on home. */
     val shade: Boolean = false,
+    /** Text size multiplier for the always-on display. */
+    val aodScale: Float = 1f,
+    /** Screen brightness while it shows, in percent. */
+    val aodBrightness: Int = 2,
+    val aodPosition: AodPosition = AodPosition.CENTER,
+    val aodColor: AodColor = AodColor.THEME,
+    /** Move a few dp each minute against burn-in. */
+    val aodShift: Boolean = true,
+    /** Go dark after this many minutes; 0 keeps it on. */
+    val aodTimeoutMin: Int = 0,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -38,11 +53,17 @@ data class CoverPrefs(
         .put("aodRows", JSONArray(aodRows)).put("aodMinBattery", aodMinBattery)
         .put("lockScreen", lockScreen.name).put("lockPreset", lockPreset.name)
         .put("shade", shade)
+        .put("aodScale", aodScale.toDouble()).put("aodBrightness", aodBrightness)
+        .put("aodPosition", aodPosition.name).put("aodColor", aodColor.name)
+        .put("aodShift", aodShift).put("aodTimeoutMin", aodTimeoutMin)
         .toString()
 
     companion object {
         const val MIN_BATTERY_LOW = 5
         const val MIN_BATTERY_HIGH = 80
+        val SCALES = listOf(0.6f, 0.8f, 1f, 1.25f, 1.5f, 2f)
+        val BRIGHTNESS = listOf(1, 2, 5, 10, 20, 40)
+        val TIMEOUTS = listOf(0, 1, 5, 15, 30, 60)
 
         fun fromJson(s: String?): CoverPrefs {
             val d = CoverPrefs()
@@ -58,6 +79,12 @@ data class CoverPrefs(
                 lockScreen = enumOr(o.optString("lockScreen"), legacy),
                 lockPreset = enumOr(o.optString("lockPreset"), d.lockPreset),
                 shade = o.optBoolean("shade", d.shade),
+                aodScale = o.optDouble("aodScale", d.aodScale.toDouble()).toFloat().coerceIn(SCALES.first(), SCALES.last()),
+                aodBrightness = o.optInt("aodBrightness", d.aodBrightness).coerceIn(1, 100),
+                aodPosition = enumOr(o.optString("aodPosition"), d.aodPosition),
+                aodColor = enumOr(o.optString("aodColor"), d.aodColor),
+                aodShift = o.optBoolean("aodShift", d.aodShift),
+                aodTimeoutMin = o.optInt("aodTimeoutMin", d.aodTimeoutMin).coerceIn(0, 24 * 60),
             )
         }
 
