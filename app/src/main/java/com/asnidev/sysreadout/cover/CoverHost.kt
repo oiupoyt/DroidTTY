@@ -126,6 +126,8 @@ class CoverHost(private val service: AccessibilityService) {
                     CoverState.suppressed = false
                     CoverState.lastUnlock = System.currentTimeMillis()
                     if (mode == Mode.COVER) hideScreen()
+                    // The shade's status-bar strip only exists while unlocked: bring it back now.
+                    syncStrip()
                 }
             }
         }
@@ -209,6 +211,7 @@ class CoverHost(private val service: AccessibilityService) {
 
     private fun screenOff() {
         closeShade()
+        if (strip.isShown) strip.hide()
         val t = SystemClock.elapsedRealtime()
         val wasAod = mode == Mode.AOD
         if (prefs.lockScreen == LockScreenMode.OWN && pins.isSet) lockOwn(show = false)
