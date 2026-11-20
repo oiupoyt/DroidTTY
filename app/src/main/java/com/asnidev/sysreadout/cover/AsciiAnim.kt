@@ -22,6 +22,8 @@ object AsciiAnim {
     /** Frames per second each look is drawn at; the battery cost follows. */
     const val FPS = 10
     private const val LIFE_STEP_MS = 200L
+    private const val FIRE_SKIP = 3
+    private const val CUBE_SKIP = 3
     private const val GLIDER_EVERY = 12
     private val GLIDER = listOf(1 to 0, 2 to 1, 0 to 2, 1 to 2, 2 to 2)
 
@@ -40,7 +42,8 @@ object AsciiAnim {
                 rows[y][x] = ramp(heat)
             }
         }
-        return withClock(rows, d, top = true)
+        // The top of the grid is mostly cold air; the flames keep the lower rows.
+        return withClock(rows.copyOfRange(FIRE_SKIP, H), d, top = true)
     }
 
     fun starfield(d: CoverData, ms: Long): CoverFrame {
@@ -124,7 +127,8 @@ object AsciiAnim {
             if (abs(a1 - a2) + abs(b1 - b2) + abs(c1 - c2) == 2.0) line(rows, p[i], p[j])
         }
         p.forEach { (x, y) -> put(rows, x.roundToInt(), y.roundToInt(), '+') }
-        return withClock(rows, d, top = false, below = true)
+        // Rows the turning cube never reaches stay out, so it sits centred over the clock.
+        return withClock(rows.copyOfRange(CUBE_SKIP, H - CUBE_SKIP), d, top = false, below = true)
     }
 
     /** Drops slide down the glass at their own speeds and leave short trails. */
