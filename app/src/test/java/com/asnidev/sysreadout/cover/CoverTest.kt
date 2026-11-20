@@ -497,3 +497,35 @@ class ShadeBoxTest {
         assertEquals("[==========]", com.asnidev.sysreadout.shade.Box.slider(2f, 10))
     }
 }
+
+class ShadeAndSkipPrefsTest {
+
+    @Test
+    fun defaultsShowEverythingAndSkipWithADoubleTap() {
+        val d = CoverPrefs()
+        assertTrue(d.skipOnDoubleTap)
+        assertEquals(com.asnidev.sysreadout.data.ShadeSection.entries, d.shadeSections)
+        assertEquals(CoverPrefs.DEFAULT_TOGGLES, d.shadeToggles)
+        assertTrue(d.shadeCloseOnOpen)
+    }
+
+    @Test
+    fun roundTripsAndDropsUnknownSections() {
+        val p = CoverPrefs(
+            skipOnDoubleTap = false,
+            shadeSections = listOf(com.asnidev.sysreadout.data.ShadeSection.NOTIFICATIONS, com.asnidev.sysreadout.data.ShadeSection.TOGGLES),
+            shadeToggles = listOf("TORCH", "WIFI"),
+            shadeRows = listOf("bat"),
+            shadeCloseOnOpen = false,
+        )
+        assertEquals(p, CoverPrefs.fromJson(p.toJson()))
+        val odd = CoverPrefs.fromJson("""{"shadeSections":["TOGGLES","NOPE","TOGGLES"]}""")
+        assertEquals(listOf(com.asnidev.sysreadout.data.ShadeSection.TOGGLES), odd.shadeSections)
+    }
+
+    @Test
+    fun everyDefaultToggleExists() {
+        val names = com.asnidev.sysreadout.shade.Toggle.entries.map { it.name }.toSet()
+        CoverPrefs.DEFAULT_TOGGLES.forEach { assertTrue(it, it in names) }
+    }
+}

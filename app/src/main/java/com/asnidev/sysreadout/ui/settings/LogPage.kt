@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -103,6 +104,36 @@ fun LogPage(vm: LauncherViewModel, open: (Page) -> Unit) {
 
     Section("pinned rows · shown")
     Note("fixed rows at the top of the log, top to bottom. tap to remove, ↑ ↓ to reorder.")
+    var confirmReset by remember { mutableStateOf(false) }
+    val sorted = prefs.logRows == LauncherPrefs.sortedRows(prefs.logRows)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(
+            if (sorted) "[sorted a-z]" else "[sort a-z]",
+            style = Type.row,
+            color = if (sorted) Palette.dim else Palette.log,
+            modifier = Modifier.clickable(enabled = !sorted) { vm.sortRows() }.padding(vertical = 8.dp),
+        )
+        Text(
+            "[reset to default]",
+            style = Type.row,
+            color = Palette.log,
+            modifier = Modifier.clickable { confirmReset = true }.padding(vertical = 8.dp),
+        )
+    }
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("reset rows", style = Type.row) },
+            text = { Note("back to the ${ProbeCatalog.defaultIds.size} rows a fresh install shows, in their order. your other log settings stay.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.resetRows()
+                    confirmReset = false
+                }) { Text("reset", style = Type.row) }
+            },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("cancel", style = Type.row) } },
+        )
+    }
     if (shown.isEmpty()) Text("  (none)", style = Type.row, color = Palette.dim)
     shown.forEachIndexed { i, probe ->
         ProbeRow(probe, on = true, onToggle = { vm.toggleRow(probe.id) }) {

@@ -132,7 +132,7 @@ fun LockScreenMode.title() = when (this) {
 
 /** Always-on display, lock screen and shade: what each does, the access they need, and the looks. */
 @Composable
-fun CoverPage(vm: LauncherViewModel) {
+fun CoverPage(vm: LauncherViewModel, open: (Page) -> Unit = {}) {
     val context = LocalContext.current
     val c by vm.cover.collectAsState()
     val shizuku by vm.shizuku.state.collectAsState()
@@ -177,7 +177,7 @@ fun CoverPage(vm: LauncherViewModel) {
 
     AodSection(vm, c, host || overlay)
     LockSection(vm, c, host)
-    ShadeSection(vm, c, host)
+    ShadeSection(vm, c, host, open)
 }
 
 @Composable
@@ -288,6 +288,11 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
             detail = { presetNote(it, c.lockScreen == LockScreenMode.OWN) },
         ) { v -> vm.updateCover { it.copy(lockPreset = v) } }
         Note(presetNote(c.lockPreset, c.lockScreen == LockScreenMode.OWN))
+        Toggle("double tap skips the animation", c.skipOnDoubleTap) { v -> vm.updateCover { it.copy(skipOnDoubleTap = v) } }
+        Note(
+            if (c.skipOnDoubleTap) "a double tap jumps to the end of the boot, ready to unlock. single taps during it still do nothing."
+            else "the boot always plays in full before a tap does anything.",
+        )
         PlacementRows(c.lockPlace, keepOwn = true) { v -> vm.updateCover { it.copy(lockPlace = v) } }
         if (c.lockScreen == LockScreenMode.OWN) {
             Cycle("keypad", c.keypad, KeypadLayout.entries, show = {
@@ -347,13 +352,14 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
 }
 
 @Composable
-private fun ShadeSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
+private fun ShadeSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean, open: (Page) -> Unit) {
     Section("notification shade")
     Note(
         "droidtty's own shade: battery, network and memory rows, quick toggles, what's playing and your notifications. " +
             "it opens from a swipe down on the status bar or on home. [system shade] inside opens android's.",
     )
     Toggle("droidtty shade", c.shade) { v -> vm.updateCover { it.copy(shade = v) } }
+    Link("configure the shade", "parts · toggles · rows ›") { open(Page.Shade) }
     if (c.shade && !host) Note("the status-bar swipe needs the lock service (access, above); swiping down on home still opens it.")
     if (c.shade) {
         Note(

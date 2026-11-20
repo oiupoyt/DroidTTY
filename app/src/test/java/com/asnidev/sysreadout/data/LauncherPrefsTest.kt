@@ -22,3 +22,10 @@ class LauncherPrefsTest {
         assertEquals("", LauncherPrefs.bannerFrom(""))
     }
 }
+
+class RowSortTest {
+    @org.junit.Test
+    fun sortsByNameCaseInsensitively() {
+        org.junit.Assert.assertEquals(listOf("bat", "cpu", "Mem", "net"), LauncherPrefs.sortedRows(listOf("net", "Mem", "bat", "cpu")))
+    }
+}

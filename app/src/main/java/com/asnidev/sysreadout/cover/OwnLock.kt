@@ -27,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
@@ -58,6 +60,7 @@ fun OwnLockContent(
     keypad: KeypadLayout = KeypadLayout.FULL,
     keypadLift: Int = 0,
     shuffle: Boolean = true,
+    skipOnDoubleTap: Boolean = true,
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
@@ -74,11 +77,12 @@ fun OwnLockContent(
     val order = remember(shuffle) { if (shuffle) Keypad.shuffled(SecureRandom()) else Keypad.STANDARD }
     val shake = remember { Animatable(0f) }
 
+    var start by remember { mutableLongStateOf(0L) }
     LaunchedEffect(preset) {
         val d = withContext(Dispatchers.IO) { reader.read() }
         data = d
         script = LockPresets.script(preset, d, own = true)
-        val start = System.currentTimeMillis()
+        start = System.currentTimeMillis()
         while (true) {
             now = System.currentTimeMillis()
             elapsed = now - start
@@ -132,7 +136,17 @@ fun OwnLockContent(
         frame,
         styled,
         blinkOn = (elapsed / BLINK_MS) % 2L == 0L,
-        modifier = Modifier.offset { IntOffset(shake.value.roundToInt(), 0) },
+        modifier = Modifier
+            .offset { IntOffset(shake.value.roundToInt(), 0) }
+            .pointerInput(ready, skipOnDoubleTap) {
+                // A double tap during the animation jumps to the password prompt.
+                if (!ready && skipOnDoubleTap) {
+                    detectTapGestures(onDoubleTap = {
+                        start -= (s.readyAt - elapsed).coerceAtLeast(0L)
+                        elapsed = s.readyAt
+                    })
+                }
+            },
         place = place,
         bottom = if (!ready || granted) null else {
             {

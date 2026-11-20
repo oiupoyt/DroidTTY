@@ -83,10 +83,14 @@ class CoverHost(private val service: AccessibilityService) {
             Mode.AOD -> AodContent(prefs, onTap = ::leaveAod) {
                 CoverState.aodSeenAt = SystemClock.elapsedRealtime()
             }
-            Mode.COVER -> LockContent(prefs.lockPreset, prefs.lockPlace, onUnlock = ::coverUnlock, onAction = ::coverAction)
+            Mode.COVER -> LockContent(
+                prefs.lockPreset, prefs.lockPlace, onUnlock = ::coverUnlock, onAction = ::coverAction,
+                skipOnDoubleTap = prefs.skipOnDoubleTap,
+            )
             Mode.OWN -> OwnLockContent(
                 prefs.lockPreset, styled, pins, onUnlocked = ::ownUnlocked,
                 place = prefs.lockPlace, keypad = prefs.keypad, keypadLift = prefs.keypadLift, shuffle = prefs.shuffleKeypad,
+                skipOnDoubleTap = prefs.skipOnDoubleTap,
             )
             null -> {}
         }
@@ -94,7 +98,7 @@ class CoverHost(private val service: AccessibilityService) {
 
     private val shade = OverlayWindow(service, "shade") {
         val styled = rememberStyled(theme, 0)
-        ShadeContent(styled, toggles, close = ::closeShade, systemShade = ::systemShadeOnPurpose)
+        ShadeContent(styled, toggles, close = ::closeShade, systemShade = ::systemShadeOnPurpose, prefs = prefs)
     }
     private val strip = OverlayWindow(service, "shade strip") {
         // Any downward pull that starts in the strip opens the shade, as soon as it passes the threshold.

@@ -1,5 +1,10 @@
 package com.asnidev.sysreadout.ui.settings
 
+import com.asnidev.sysreadout.update.Updates
+import com.asnidev.sysreadout.update.UpdateChecker
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import android.text.format.DateUtils
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.heightIn
@@ -28,7 +33,7 @@ import com.asnidev.sysreadout.ui.Type
 private const val REPO = "https://github.com/oiupoyt/DroidTTY"
 
 @Composable
-fun AboutPage() {
+fun AboutPage(updates: UpdateChecker? = null) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
     var showing by remember { mutableStateOf<FontOption?>(null) }
@@ -38,6 +43,8 @@ fun AboutPage() {
     Section("droidtty launcher")
     Note("v${BuildConfig.VERSION_NAME} · free software under the GNU GPL v3")
     Link("source code and issues", "github ›") { SystemActions.openUrl(context, REPO) }
+
+    if (updates != null) UpdatesSection(updates)
 
     report?.let { text ->
         Section("last crash")
@@ -88,4 +95,52 @@ private fun TextDialog(title: String, text: String, onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("close", style = Type.row) } },
     )
+}
+
+/** The update check: on by default, once a day; a newer version downloads and opens Android's installer. */
+@Composable
+private fun UpdatesSection(updates: UpdateChecker) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var enabled by remember { mutableStateOf(updates.enabled) }
+    var available by remember { mutableStateOf(updates.available) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var checking by remember { mutableStateOf(false) }
+
+    Section("updates")
+    Toggle("check for updates", enabled) { v ->
+        updates.enabled = v
+        enabled = v
+    }
+    Note(
+        "once a day, droidtty reads one small file from its github releases to see if there's a newer version. " +
+            "nothing about you or your phone is sent. a new version shows a notification; tapping it downloads the " +
+            "apk and android's installer asks before replacing anything.",
+    )
+    val r = available
+    if (r != null) {
+        Link("install ${r.versionName}", "download ›") {
+            if (!updates.download()) status = "couldn't start the download"
+        }
+        if (r.notes.isNotBlank()) Note(r.notes)
+    }
+    Link(if (checking) "checking…" else "check now", "›") {
+        if (checking) return@Link
+        checking = true
+        scope.launch {
+            val found = updates.check()
+            checking = false
+            available = updates.available
+            status = when {
+                found == null -> "couldn't reach github; try again later"
+                updates.available == null -> "you have the newest version (${BuildConfig.VERSION_NAME})"
+                else -> "${found.versionName} is out"
+            }
+        }
+    }
+    status?.let { Note(it) }
+    if (updates.lastCheck > 0) {
+        Note("last checked " + DateUtils.getRelativeTimeSpanString(updates.lastCheck, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS))
+    }
+    Link("all releases", "›") { SystemActions.openUrl(context, Updates.RELEASES_PAGE) }
 }

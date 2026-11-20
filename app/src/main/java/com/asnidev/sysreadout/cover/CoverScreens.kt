@@ -111,17 +111,25 @@ private fun aodStyled(base: Styled, scale: Float, color: AodColor): Styled {
 
 /** The lock cover: plays [preset]'s script once, then a tap anywhere (or on a GRUB entry) unlocks. */
 @Composable
-fun LockContent(preset: LockPreset, place: Placement?, onUnlock: () -> Unit, onAction: (String) -> Unit) {
+fun LockContent(
+    preset: LockPreset,
+    place: Placement?,
+    onUnlock: () -> Unit,
+    onAction: (String) -> Unit,
+    skipOnDoubleTap: Boolean = true,
+) {
     val context = LocalContext.current
     val styled = rememberCoverStyled()
     val reader = remember { CoverReader(context.applicationContext) }
     var script by remember { mutableStateOf<LockScript?>(null) }
     var elapsed by remember { mutableLongStateOf(0L) }
 
+    // Moved forward by a double tap that skips the animation.
+    var start by remember { mutableLongStateOf(0L) }
     LaunchedEffect(preset) {
         val d = withContext(Dispatchers.IO) { reader.read() }
         script = LockPresets.script(preset, d)
-        val start = System.currentTimeMillis()
+        start = System.currentTimeMillis()
         while (true) {
             elapsed = System.currentTimeMillis() - start
             // Fast while the animation plays, then just the cursor blink.
@@ -136,9 +144,17 @@ fun LockContent(preset: LockPreset, place: Placement?, onUnlock: () -> Unit, onA
         s.at(elapsed),
         styled,
         blinkOn = (elapsed / BLINK_MS) % 2L == 0L,
-        modifier = Modifier.pointerInput(ready) {
-            // Taps before the animation ends do nothing, so a tap in a pocket can't unlock.
-            if (ready) detectTapGestures(onTap = { unlock() })
+        modifier = Modifier.pointerInput(ready, skipOnDoubleTap) {
+            // Single taps before the animation ends do nothing, so a tap in a pocket can't unlock;
+            // a deliberate double tap can jump to the end instead.
+            if (ready) {
+                detectTapGestures(onTap = { unlock() })
+            } else if (skipOnDoubleTap) {
+                detectTapGestures(onDoubleTap = {
+                    start -= (s.readyAt - elapsed).coerceAtLeast(0L)
+                    elapsed = s.readyAt
+                })
+            }
         },
         onAction = if (ready) onAction else null,
         place = place,

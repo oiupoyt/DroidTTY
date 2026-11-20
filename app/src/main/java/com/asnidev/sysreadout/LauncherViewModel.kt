@@ -35,6 +35,7 @@ import com.asnidev.sysreadout.data.SettingsStore
 import com.asnidev.sysreadout.data.StyleElement
 import com.asnidev.sysreadout.data.Theme
 import com.asnidev.sysreadout.log.LogEngine
+import com.asnidev.sysreadout.log.ProbeCatalog
 import com.asnidev.sysreadout.monitor.DnsLog
 import com.asnidev.sysreadout.monitor.DnsVpnService
 import com.asnidev.sysreadout.monitor.NotifLog
@@ -46,6 +47,7 @@ import com.asnidev.sysreadout.system.LockScreen
 import com.asnidev.sysreadout.system.LockService
 import com.asnidev.sysreadout.ui.Fonts
 import com.asnidev.sysreadout.ui.settings.Page
+import com.asnidev.sysreadout.update.UpdateChecker
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -197,6 +199,14 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    val updates = UpdateChecker(app)
+    private val downloads = UpdateChecker.register(app, updates)
+
+    /** At most once a day, and only while the launcher is in front. */
+    fun checkForUpdate() {
+        if (!safeMode.value) scope.launch { updates.maybeCheck() }
+    }
+
     /** Restarts the screen service if Android stopped it; called whenever home comes back. */
     fun ensureScreenService() = ScreenService.sync(getApplication(), cover.value, safeMode.value)
 
@@ -310,6 +320,11 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         it.copy(logRows = if (id in it.logRows) it.logRows - id else it.logRows + id)
     }
 
+    fun sortRows() = update { it.copy(logRows = LauncherPrefs.sortedRows(it.logRows)) }
+
+    /** Back to the rows a fresh install shows, in their order. */
+    fun resetRows() = update { it.copy(logRows = ProbeCatalog.defaultIds) }
+
     fun moveRow(id: String, delta: Int) = update {
         val list = it.logRows.toMutableList()
         val from = list.indexOf(id)
@@ -358,6 +373,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         runCatching { getApplication<Application>().unregisterReceiver(screenOff) }
+        runCatching { getApplication<Application>().unregisterReceiver(downloads) }
         repo.close()
         shizuku.close()
     }

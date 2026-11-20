@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
@@ -151,7 +152,8 @@ fun <T> Choose(
         onDismissRequest = { open = false },
         title = { Text(label, style = Type.row) },
         text = {
-            LazyColumn {
+            // Bounded height: a lazy list given unlimited height throws, which is what crashed the look picker.
+            LazyColumn(Modifier.heightIn(max = CHOOSER_MAX_HEIGHT)) {
                 var last: String? = null
                 options.forEach { option ->
                     val g = group?.invoke(option)
@@ -161,7 +163,7 @@ fun <T> Choose(
                             Text("## $g", style = Type.small, color = Palette.log, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
                         }
                     }
-                    item(key = option.hashCode()) {
+                    item(key = "o:${options.indexOf(option)}") {
                         val selected = option == value
                         Column(
                             Modifier
@@ -186,3 +188,5 @@ fun <T> Choose(
         confirmButton = { TextButton(onClick = { open = false }) { Text("close", style = Type.row) } },
     )
 }
+
+private val CHOOSER_MAX_HEIGHT = 460.dp

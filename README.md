@@ -84,7 +84,8 @@ Nothing beyond the basics is used until you switch on the feature that needs it,
 | Set alarm | tapping the clock opens your alarms | install-time |
 | Query all packages | real app names for system processes, connections and traffic | install-time |
 | Set wallpaper | lock-screen image or log snapshot | only if you choose it |
-| Internet | **only** the optional DNS monitor, which relays your apps' own lookups to your network's own DNS servers (no public fallback) | only if you switch it on |
+| Internet | the update check (once a day, one small version file from this repo's GitHub release; off under settings › about) and the optional DNS monitor, which relays your apps' own lookups to your network's own DNS servers | update check on by default; DNS monitor only if you switch it on |
+| Install packages | installing a downloaded update; Android's installer asks first | only when you tap an update |
 | Usage access | screen time, traffic, app switches | you grant it in Android settings |
 | Notification access | notification log, the shade's notifications and media controls | you grant it in Android settings |
 | Accessibility (lock service) | double-tap to lock; draws the always-on display, lock screens and shade over other windows; watches which window opens (to replace Android's shade or guard the own lock), never window content | you enable it in Android settings |
@@ -98,7 +99,7 @@ Nothing beyond the basics is used until you switch on the feature that needs it,
 
 ## Privacy
 
-No ads, no analytics, no tracking, no accounts. Everything is read on the phone and kept in memory; nothing is written anywhere except your settings, the own lock's PIN hash (in storage that's never backed up), and, if DroidTTY crashes, the last crash report, which stays on the phone until you share or delete it. The log stops when the home screen isn't visible.
+No ads, no analytics, no tracking, no accounts. The daily update check downloads one public file and sends nothing about you or your phone. Everything is read on the phone and kept in memory; nothing is written anywhere except your settings, the own lock's PIN hash (in storage that's never backed up), and, if DroidTTY crashes, the last crash report, which stays on the phone until you share or delete it. The log stops when the home screen isn't visible.
 
 ## Build
 

@@ -74,6 +74,12 @@ jobs:
           mkdir -p release-artifacts
           # The README's install link points at this name.
           cp "$APK" release-artifacts/DroidTTY.apk
+          # Read by the app's update check (update/Updates.kt).
+          VCODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          NOTES="metadata/en-US/changelogs/$VCODE.txt"
+          python3 -c 'import json,sys,os; print(json.dumps({"versionCode": int(sys.argv[1]), "versionName": sys.argv[2], "apk": sys.argv[3], "notes": open(sys.argv[4]).read().strip() if os.path.exists(sys.argv[4]) else ""}))' \
+            "$VCODE" "$VNAME" "https://github.com/${GITHUB_REPOSITORY}/releases/download/latest/DroidTTY.apk" "$NOTES" \
+            > release-artifacts/version.json
 
       - name: Publish rolling 'latest' release
         env:
@@ -82,7 +88,7 @@ jobs:
           gh release delete latest --yes --cleanup-tag || true
           printf '%s\n' "Rolling build of \`main\`, replaced on every push. Stable versions are the vX.Y.Z releases." \
             "Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/latest/DroidTTY.apk" > latest-notes.md
-          gh release create latest release-artifacts/DroidTTY.apk \
+          gh release create latest release-artifacts/DroidTTY.apk release-artifacts/version.json \
             --prerelease \
             --title "Latest build (${{ steps.stage.outputs.vname }})" \
             --notes-file latest-notes.md

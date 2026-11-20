@@ -66,6 +66,9 @@ data class LauncherPrefs(
 ) {
     companion object {
         val INTERVALS = listOf(1, 2, 5, 10)
+
+        /** The shown rows ordered by their name (the key column), A to Z. */
+        fun sortedRows(rows: List<String>): List<String> = rows.sortedBy { it.lowercase() }
         const val DEFAULT_BANNER =
             "DROIDTTY INDUSTRIES OPERATING SYSTEM\nCOPYRIGHT 2026-{year} DROIDTTY INC.\n- {device} -"
 

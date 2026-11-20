@@ -52,6 +52,9 @@ data class Placement(
     }
 }
 
+/** The parts of DroidTTY's notification shade, in the order they show. */
+enum class ShadeSection { READOUT, TOGGLES, LEVELS, MEDIA, NOTIFICATIONS }
+
 /** The own lock's keypad: across the screen, or narrower on one side for one-handed use. */
 enum class KeypadLayout { FULL, LEFT, CENTER, RIGHT }
 
@@ -96,6 +99,16 @@ data class CoverPrefs(
     val keypadLift: Int = 0,
     /** Digits in a new random order each time the own lock shows. */
     val shuffleKeypad: Boolean = true,
+    /** A double tap skips a lock preset's animation to its last screen. */
+    val skipOnDoubleTap: Boolean = true,
+    /** Shade parts shown, top to bottom; a part left out is hidden. */
+    val shadeSections: List<ShadeSection> = ShadeSection.entries,
+    /** Quick toggles shown, by name, in order; unknown names are skipped. */
+    val shadeToggles: List<String> = DEFAULT_TOGGLES,
+    /** Readout rows at the top of the shade (ids from ProbeCatalog). */
+    val shadeRows: List<String> = listOf("bat", "net", "mem", "up"),
+    /** Close the shade after opening a notification or a settings panel. */
+    val shadeCloseOnOpen: Boolean = true,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -110,6 +123,11 @@ data class CoverPrefs(
         .put("aodShift", aodShift).put("aodTimeoutMin", aodTimeoutMin)
         .put("lockPlace", lockPlace.toJson()).put("keypad", keypad.name).put("keypadLift", keypadLift)
         .put("shuffleKeypad", shuffleKeypad)
+        .put("skipOnDoubleTap", skipOnDoubleTap)
+        .put("shadeSections", JSONArray(shadeSections.map { it.name }))
+        .put("shadeToggles", JSONArray(shadeToggles))
+        .put("shadeRows", JSONArray(shadeRows))
+        .put("shadeCloseOnOpen", shadeCloseOnOpen)
         .toString()
 
     companion object {
@@ -119,6 +137,8 @@ data class CoverPrefs(
         val BRIGHTNESS = listOf(1, 2, 5, 10, 20, 40)
         val TIMEOUTS = listOf(0, 1, 5, 15, 30, 60)
         const val STEP_LIFT = 16
+        /** The shade's toggles before anyone picks: everything Android has a quick setting for. */
+        val DEFAULT_TOGGLES = listOf("WIFI", "BLUETOOTH", "DATA", "AIRPLANE", "LOCATION", "DND", "TORCH", "ROTATE", "HOTSPOT", "NFC", "SAVER", "DARK")
         val RANGE_LIFT = 0..240
 
         fun fromJson(s: String?): CoverPrefs {
@@ -149,8 +169,17 @@ data class CoverPrefs(
                 keypad = enumOr(o.optString("keypad"), d.keypad),
                 keypadLift = o.optInt("keypadLift", d.keypadLift).coerceIn(RANGE_LIFT),
                 shuffleKeypad = o.optBoolean("shuffleKeypad", d.shuffleKeypad),
+                skipOnDoubleTap = o.optBoolean("skipOnDoubleTap", d.skipOnDoubleTap),
+                shadeSections = strings(o, "shadeSections")?.mapNotNull { n -> ShadeSection.entries.firstOrNull { it.name == n } }?.distinct()
+                    ?: d.shadeSections,
+                shadeToggles = strings(o, "shadeToggles")?.distinct() ?: d.shadeToggles,
+                shadeRows = strings(o, "shadeRows")?.distinct() ?: d.shadeRows,
+                shadeCloseOnOpen = o.optBoolean("shadeCloseOnOpen", d.shadeCloseOnOpen),
             )
         }
+
+        private fun strings(o: JSONObject, key: String): List<String>? =
+            o.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optString(it) }.filter { it.isNotBlank() } }
 
         private inline fun <reified E : Enum<E>> enumOr(name: String, default: E): E =
             runCatching { enumValueOf<E>(name) }.getOrDefault(default)

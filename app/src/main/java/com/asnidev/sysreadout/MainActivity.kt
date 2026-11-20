@@ -2,6 +2,7 @@ package com.asnidev.sysreadout
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.asnidev.sysreadout.ui.Drawer
+import com.asnidev.sysreadout.update.UpdateChecker
 import com.asnidev.sysreadout.ui.HomeScreen
 import com.asnidev.sysreadout.ui.LogBackdrop
 import com.asnidev.sysreadout.data.EntryStyle
@@ -55,6 +57,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         preview(intent)
+        handleUpdate(intent)
         setContent { SysReadoutTheme { LauncherRoot(vm, this) } }
     }
 
@@ -68,6 +71,13 @@ class MainActivity : ComponentActivity() {
      * `--es halign center`, `--es valign top`,
      * `--ez shizuku true`. Force-stopping the app drops all of them.
      */
+    /** The update notification's tap: download and install. */
+    private fun handleUpdate(intent: Intent?) {
+        if (intent?.action == UpdateChecker.ACTION_DOWNLOAD && !vm.updates.download()) {
+            Toast.makeText(this, "no update to download", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun preview(intent: Intent?) {
         if (!BuildConfig.DEBUG) return
         if (intent?.getBooleanExtra("crash", false) == true) error("crash requested over adb")
@@ -133,12 +143,14 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         vm.screen = Screen.HOME
         preview(intent)
+        handleUpdate(intent)
     }
 
     override fun onResume() {
         super.onResume()
         vm.repo.refresh()
         vm.ensureScreenService()
+        vm.checkForUpdate()
     }
 }
 

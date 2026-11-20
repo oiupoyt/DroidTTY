@@ -55,6 +55,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.asnidev.sysreadout.data.CoverPrefs
+import com.asnidev.sysreadout.data.ShadeSection
 import com.asnidev.sysreadout.log.ProbeReader
 import com.asnidev.sysreadout.monitor.NotifListener
 import com.asnidev.sysreadout.monitor.NotifLog
@@ -80,7 +82,13 @@ private enum class Panel { NONE, BLUETOOTH, WIFI }
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShade: () -> Unit) {
+fun ShadeContent(
+    styled: Styled,
+    toggles: Toggles,
+    close: () -> Unit,
+    systemShade: () -> Unit,
+    prefs: CoverPrefs = CoverPrefs(),
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val version by NotifListener.version.collectAsState()
@@ -94,7 +102,7 @@ fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShad
     // The readout refreshes every 2 s; the rest re-reads on a change or a tap.
     LaunchedEffect(Unit) {
         while (true) {
-            header = withContext(Dispatchers.IO) { runCatching { reader.sample(HEADER_ROWS) }.getOrDefault(emptyList()) }
+            header = withContext(Dispatchers.IO) { runCatching { reader.sample(prefs.shadeRows) }.getOrDefault(emptyList()) }
             playing = withContext(Dispatchers.IO) { media(context) }
             tick++
             delay(2_000)
@@ -104,7 +112,12 @@ fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShad
 
     fun open(intent: Intent) {
         SystemActions.open(context, intent)
-        close()
+        if (prefs.shadeCloseOnOpen) close()
+    }
+    val shown = prefs.shadeSections.toSet()
+    val tiles = remember(prefs.shadeToggles) {
+        val have = toggles.available().toSet()
+        prefs.shadeToggles.mapNotNull { n -> Toggle.entries.firstOrNull { it.name == n } }.filter { it in have }
     }
 
     val dim = styled.date.color
@@ -122,99 +135,114 @@ fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShad
             .onSizeChanged { cols = (it.width / (charW * context.resources.displayMetrics.scaledDensity)).toInt().coerceIn(24, 60) },
     ) {
         LazyColumn(Modifier.weight(1f)) {
-            item(key = "head") {
-                Section(styled, "droidtty --shade", cols) {
-                    header.forEach { Text(it, style = styled.log, maxLines = 1, overflow = TextOverflow.Clip) }
-                }
-            }
-            item(key = "toggles") {
-                Section(styled, "toggles", cols) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        toggles.available().forEach { t ->
-                            val on = remember(tick, t) { toggles.isOn(t) }
-                            Tile(styled, "${if (on == true) "[x]" else if (on == null) "[?]" else "[ ]"} ${t.label}", on == true) {
-                                scope.launch {
-                                    toggles.flip(t)?.let(::open)
-                                    tick++
+            // Each part in the order chosen in settings › screen › notification shade; left-out parts are hidden.
+            prefs.shadeSections.forEach { section ->
+                when (section) {
+                    ShadeSection.READOUT -> if (prefs.shadeRows.isNotEmpty()) {
+                        item(key = "head") {
+                            Section(styled, "droidtty --shade", cols) {
+                                header.forEach { Text(it, style = styled.log, maxLines = 1, overflow = TextOverflow.Clip) }
+                            }
+                        }
+                    }
+                    ShadeSection.TOGGLES -> {
+                        item(key = "toggles") {
+                            Section(styled, "toggles", cols) {
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    tiles.forEach { t ->
+                                        val on = remember(tick, t) { toggles.isOn(t) }
+                                        Tile(styled, "${if (on == true) "[x]" else if (on == null) "[?]" else "[ ]"} ${t.label}", on == true) {
+                                            scope.launch {
+                                                toggles.flip(t)?.let(::open)
+                                                tick++
+                                            }
+                                        }
+                                    }
+                                }
+                                Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text(
+                                        (if (panel == Panel.BLUETOOTH) "v" else ">") + " bluetooth devices",
+                                        style = styled.log,
+                                        color = styled.accent,
+                                        modifier = Modifier.clickable { panel = if (panel == Panel.BLUETOOTH) Panel.NONE else Panel.BLUETOOTH }.padding(vertical = 6.dp),
+                                    )
+                                    Text(
+                                        (if (panel == Panel.WIFI) "v" else ">") + " wi-fi networks",
+                                        style = styled.log,
+                                        color = styled.accent,
+                                        modifier = Modifier.clickable { panel = if (panel == Panel.WIFI) Panel.NONE else Panel.WIFI }.padding(vertical = 6.dp),
+                                    )
+                                }
+                                if (panel == Panel.BLUETOOTH) BluetoothPanel(styled, toggles, tick, ::open) { scope.launch { toggles.bluetoothTap(it)?.let(::open); tick++ } }
+                                if (panel == Panel.WIFI) WifiPanel(styled, toggles, tick, ::open)
+                                if (!toggles.direct) Text("connect shizuku to switch directly; without it a tap opens android's panel.", style = styled.log, color = dim)
+                            }
+                        }
+                    }
+                    ShadeSection.LEVELS -> {
+                        item(key = "sliders") {
+                            Section(styled, "levels", cols) {
+                                val bri = remember(tick) { toggles.brightness() }
+                                val auto = remember(tick) { toggles.autoBrightness() }
+                                if (bri != null) {
+                                    Slider(styled, "bri", bri, cols) { level ->
+                                        scope.launch { if (!toggles.setBrightness(level)) open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) else tick++ }
+                                    }
+                                    Text(
+                                        "${if (auto == true) "[x]" else "[ ]"} auto brightness",
+                                        style = styled.log,
+                                        modifier = Modifier.clickable {
+                                            scope.launch { if (!toggles.setAutoBrightness(auto != true)) open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) else tick++ }
+                                        }.padding(vertical = 6.dp),
+                                    )
+                                }
+                                Volume.entries.forEach { v ->
+                                    val level = remember(tick, v) { toggles.volume(v) }
+                                    Slider(styled, v.label.take(5), level, cols) { l ->
+                                        if (!toggles.setVolume(v, l)) open(Intent(Settings.ACTION_SOUND_SETTINGS))
+                                        tick++
+                                    }
                                 }
                             }
                         }
                     }
-                    Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            (if (panel == Panel.BLUETOOTH) "v" else ">") + " bluetooth devices",
-                            style = styled.log,
-                            color = styled.accent,
-                            modifier = Modifier.clickable { panel = if (panel == Panel.BLUETOOTH) Panel.NONE else Panel.BLUETOOTH }.padding(vertical = 6.dp),
-                        )
-                        Text(
-                            (if (panel == Panel.WIFI) "v" else ">") + " wi-fi networks",
-                            style = styled.log,
-                            color = styled.accent,
-                            modifier = Modifier.clickable { panel = if (panel == Panel.WIFI) Panel.NONE else Panel.WIFI }.padding(vertical = 6.dp),
-                        )
-                    }
-                    if (panel == Panel.BLUETOOTH) BluetoothPanel(styled, toggles, tick, ::open) { scope.launch { toggles.bluetoothTap(it)?.let(::open); tick++ } }
-                    if (panel == Panel.WIFI) WifiPanel(styled, toggles, tick, ::open)
-                    if (!toggles.direct) Text("connect shizuku to switch directly; without it a tap opens android's panel.", style = styled.log, color = dim)
-                }
-            }
-            item(key = "sliders") {
-                Section(styled, "levels", cols) {
-                    val bri = remember(tick) { toggles.brightness() }
-                    val auto = remember(tick) { toggles.autoBrightness() }
-                    if (bri != null) {
-                        Slider(styled, "bri", bri, cols) { level ->
-                            scope.launch { if (!toggles.setBrightness(level)) open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) else tick++ }
-                        }
-                        Text(
-                            "${if (auto == true) "[x]" else "[ ]"} auto brightness",
-                            style = styled.log,
-                            modifier = Modifier.clickable {
-                                scope.launch { if (!toggles.setAutoBrightness(auto != true)) open(Intent(Settings.ACTION_DISPLAY_SETTINGS)) else tick++ }
-                            }.padding(vertical = 6.dp),
-                        )
-                    }
-                    Volume.entries.forEach { v ->
-                        val level = remember(tick, v) { toggles.volume(v) }
-                        Slider(styled, v.label.take(5), level, cols) { l ->
-                            if (!toggles.setVolume(v, l)) open(Intent(Settings.ACTION_SOUND_SETTINGS))
-                            tick++
+                    ShadeSection.MEDIA -> {
+                        playing?.let { mc ->
+                            item(key = "media") { Section(styled, "playing", cols) { MediaRow(mc, styled) { tick++ } } }
                         }
                     }
-                }
-            }
-            playing?.let { mc ->
-                item(key = "media") { Section(styled, "playing", cols) { MediaRow(mc, styled) { tick++ } } }
-            }
-            item(key = "ntf-head") {
-                Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text(Box.top("notifications", cols), style = styled.log, color = styled.accent, maxLines = 1, modifier = Modifier.weight(1f))
-                }
-                Row(Modifier.fillMaxWidth()) {
-                    if (groups.any { g -> g.items.any { it.clearable } }) {
-                        Text("[clear all]", style = styled.log, modifier = Modifier.clickable { NotifListener.dismissAll() }.padding(6.dp))
+                    ShadeSection.NOTIFICATIONS -> {
+                        item(key = "ntf-head") {
+                            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                                Text(Box.top("notifications", cols), style = styled.log, color = styled.accent, maxLines = 1, modifier = Modifier.weight(1f))
+                            }
+                            Row(Modifier.fillMaxWidth()) {
+                                if (groups.any { g -> g.items.any { it.clearable } }) {
+                                    Text("[clear all]", style = styled.log, modifier = Modifier.clickable { NotifListener.dismissAll() }.padding(6.dp))
+                                }
+                            }
+                            when {
+                                !NotifLog.connected -> Column {
+                                    Text("| no notification access: allow it so they show here", style = styled.log, color = dim)
+                                    Text(
+                                        "| [grant]",
+                                        style = styled.log,
+                                        modifier = Modifier.clickable { open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }.padding(vertical = 8.dp),
+                                    )
+                                }
+                                groups.isEmpty() -> Text("| no notifications", style = styled.log, color = dim)
+                            }
+                        }
+                        groups.forEach { g ->
+                            item(key = "g:${g.pkg}") {
+                                Text("|## ${appName(context, g.pkg)}", style = styled.log, color = styled.accent, modifier = Modifier.padding(top = 6.dp))
+                            }
+                            items(g.items, key = { it.key }) { n -> NotificationRow(styled, n, cols, context) { tick++ } }
+                        }
+                        item(key = "ntf-foot") { Text(Box.bottom(cols), style = styled.log, color = styled.accent, maxLines = 1) }
                     }
                 }
-                when {
-                    !NotifLog.connected -> Column {
-                        Text("| no notification access: allow it so they show here", style = styled.log, color = dim)
-                        Text(
-                            "| [grant]",
-                            style = styled.log,
-                            modifier = Modifier.clickable { open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }.padding(vertical = 8.dp),
-                        )
-                    }
-                    groups.isEmpty() -> Text("| no notifications", style = styled.log, color = dim)
-                }
             }
-            groups.forEach { g ->
-                item(key = "g:${g.pkg}") {
-                    Text("|## ${appName(context, g.pkg)}", style = styled.log, color = styled.accent, modifier = Modifier.padding(top = 6.dp))
-                }
-                items(g.items, key = { it.key }) { n -> NotificationRow(styled, n, cols, context) { tick++ } }
-            }
-            item(key = "ntf-foot") { Text(Box.bottom(cols), style = styled.log, color = styled.accent, maxLines = 1) }
         }
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("[system shade]", style = styled.log, modifier = Modifier.clickable { systemShade() }.padding(8.dp))
@@ -461,7 +489,6 @@ private fun sendReply(context: Context, r: Reply, text: String): Boolean = runCa
     true
 }.getOrDefault(false)
 
-private val HEADER_ROWS = listOf("bat", "net", "mem", "up")
 private val STAMP = DateTimeFormatter.ofPattern("HH:mm", Locale.US)
 
 private fun stamp(t: Long) = STAMP.format(Instant.ofEpochMilli(t).atZone(ZoneId.systemDefault()))

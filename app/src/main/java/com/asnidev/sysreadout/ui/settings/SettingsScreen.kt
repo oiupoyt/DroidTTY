@@ -58,6 +58,7 @@ sealed interface Page {
     data object Crt : Page { override val title = "crt effects" }
     data object Shizuku : Page { override val title = "shizuku" }
     data object Cover : Page { override val title = "screen" }
+    data object Shade : Page { override val title = "notification shade" }
 
     companion object {
         /** Top-level pages by name, for `--es page <name>`. */
@@ -92,10 +93,11 @@ fun SettingsScreen(vm: LauncherViewModel) {
                     Page.Log -> LogPage(vm, open)
                     Page.Appearance -> AppearancePage(vm, open)
                     is Page.Element -> ElementPage(vm, page.element)
-                    Page.About -> AboutPage()
+                    Page.About -> AboutPage(vm.updates)
                     Page.Crt -> CrtPage(vm)
                     Page.Shizuku -> ShizukuPage(vm)
-                    Page.Cover -> CoverPage(vm)
+                    Page.Cover -> CoverPage(vm, open)
+                    Page.Shade -> ShadePage(vm)
                 }
             }
         }
