@@ -669,12 +669,26 @@ class LogEngine(
 
     /** The name the user sees for a package: their rename, the launcher label, or the app's own label. */
     private fun appLabel(pkg: String): String? {
-        apps.value.firstOrNull { it.key.pkg == pkg }?.let { return prefs.value.renames[it.key] ?: it.label }
+        appsByPkg()[pkg]?.let { return prefs.value.renames[it.key] ?: it.label }
         if (pkg in labels) return labels[pkg]
         val label = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrNull()
             ?.takeIf { it.isNotBlank() && it != pkg }
         labels[pkg] = label
         return label
+    }
+
+    private var indexedApps: List<AppEntry>? = null
+    private var byPkg: Map<String, AppEntry> = emptyMap()
+
+    /** Launcher apps by package, rebuilt only when the list changes (it's read per process row). */
+    private fun appsByPkg(): Map<String, AppEntry> {
+        val list = apps.value
+        if (list !== indexedApps) {
+            indexedApps = list
+            // The first entry per package, as the list search found it before.
+            byPkg = list.asReversed().associateBy { it.key.pkg }
+        }
+        return byPkg
     }
 
     private fun pkgLabel(pkg: String): String = appLabel(pkg) ?: shortPkg(pkg)
@@ -751,8 +765,10 @@ class LogEngine(
     private fun publish() {
         val tables = listOfNotNull(procTable, connTable, wakeTable, batteryTable, screenTable, trafficTable, notifTable)
         updateFeed(tables)
-        _frame.value = LogFrame(banner, pinned, tables, stream.toList(), feed.rows.toList())
-        CoverState.events = stream.takeLast(AOD_EVENTS).map { "${hhmm(it.time)} ${it.text}" }
+        val lines = stream.toList()
+        _frame.value = LogFrame(banner, pinned, tables, lines, feed.rows.toList())
+        // Formatted only when the always-on display reads them, not on every publish.
+        CoverState.eventSource = { lines.takeLast(AOD_EVENTS).map { "${hhmm(it.time)} ${it.text}" } }
     }
 
     private fun updateFeed(tables: List<LogTable>) {

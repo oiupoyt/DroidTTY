@@ -103,8 +103,9 @@ object CoverState {
 
     @Volatile var lastUnlock: Long? = null
 
-    /** Newest log events, oldest first; kept by the log engine while the launcher runs. */
-    @Volatile var events: List<String> = emptyList()
+    /** Newest log events, oldest first; the log engine sets how to make them while the launcher runs. */
+    @Volatile var eventSource: () -> List<String> = { emptyList() }
+    val events: List<String> get() = eventSource()
 
     /** Per-core load from the log engine's last Shizuku sample. */
     @Volatile var coreLoad: List<Double> = emptyList()

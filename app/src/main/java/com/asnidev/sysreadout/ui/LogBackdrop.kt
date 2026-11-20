@@ -125,7 +125,8 @@ fun LogBackdrop(vm: LauncherViewModel, modifier: Modifier = Modifier) {
             if (frame.pinned.isNotEmpty() || frame.tables.isNotEmpty()) Line("─".repeat(80), log, dim)
             // Newest line at the bottom; older lines scroll off the top.
             LazyColumn(Modifier.fillMaxWidth().fillMaxSize(), reverseLayout = true, userScrollEnabled = false) {
-                itemsIndexed(frame.stream.asReversed()) { i, line ->
+                // Keyed by sequence: a new line composes one row instead of redrawing the stream.
+                itemsIndexed(frame.stream.asReversed(), key = { _, line -> line.seq }) { i, line ->
                     val text = if (prefs.streamTimestamps) "${stamp(line.time)} ${line.text}" else line.text
                     Line(text, log, log.color.copy(alpha = if (i == 0) 1f else 0.6f))
                 }

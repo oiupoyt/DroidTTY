@@ -12,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +31,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -464,16 +466,25 @@ private fun signed(dp: Int) = when {
     else -> "0"
 }
 
-/** A small framed box running the real screen, so the look can be judged without locking the phone. */
+/**
+ * A framed box in the phone's proportions running the real screen. It starts on
+ * a tap and stops when scrolled away, so the settings page scrolls smoothly and
+ * an animated look doesn't run in the background of the page.
+ */
 @Composable
 private fun Preview(content: @Composable () -> Unit) {
-    // The phone's own proportions, so top, middle and bottom read as they will on the lock screen.
     val metrics = LocalContext.current.resources.displayMetrics
     val ratio = metrics.widthPixels.toFloat() / metrics.heightPixels.coerceAtLeast(1)
+    var running by remember { mutableStateOf(false) }
     Box(
         Modifier.padding(vertical = 8.dp).fillMaxWidth().aspectRatio(ratio.coerceIn(0.3f, 1f))
-            .border(1.dp, Palette.dim.copy(alpha = 0.5f)),
-    ) { content() }
+            .border(1.dp, Palette.dim.copy(alpha = 0.5f))
+            .clickable { running = !running },
+        contentAlignment = Alignment.Center,
+    ) {
+        if (running) content() else Text("[ tap to preview ]", style = Type.row, color = Palette.log)
+    }
+    if (running) Note("tap the preview to stop it.")
 }
 
 /** Rows that read cheaply without listeners or extra permissions, for the always-on display. */

@@ -63,11 +63,16 @@ fun Drawer(vm: LauncherViewModel) {
     val focus = remember { FocusRequester() }
 
     val q = normalize(query.trim())
-    val visible = apps.filter { it.key !in prefs.hidden }
-    val results = if (q.isEmpty()) visible else visible
-        .mapNotNull { app -> rank(vm.label(app), q)?.let { app to it } }
-        .sortedBy { it.second }
-        .map { it.first }
+    // Recomputed only when the query, the apps, or hidden/renamed apps change.
+    val labels = remember(apps, prefs.renames) { apps.associate { it.key to (prefs.renames[it.key] ?: it.label) } }
+    val visible = remember(apps, prefs.hidden) { apps.filter { it.key !in prefs.hidden } }
+    val results = remember(q, visible, labels) {
+        if (q.isEmpty()) visible else visible
+            .mapNotNull { app -> rank(labels.getValue(app.key), q)?.let { app to it } }
+            .sortedBy { it.second }
+            .map { it.first }
+    }
+    val pinnedSet = remember(prefs.pinned) { prefs.pinned.toSet() }
 
     val open: (AppEntry) -> Unit = { app ->
         if (!vm.launch(app.key)) Toast.makeText(context, "can't open ${app.label}", Toast.LENGTH_SHORT).show()
@@ -113,23 +118,23 @@ fun Drawer(vm: LauncherViewModel) {
             },
         )
         LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-            items(results, key = { it.key.encode() }) { app -> DrawerRow(vm, app, styled, open) }
+            items(results, key = { it.key.encode() }, contentType = { 0 }) { app ->
+                DrawerRow(vm, app, labels.getValue(app.key), app.key in pinnedSet, styled, open)
+            }
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DrawerRow(vm: LauncherViewModel, app: AppEntry, styled: Styled, open: (AppEntry) -> Unit) {
+private fun DrawerRow(vm: LauncherViewModel, app: AppEntry, label: String, pinned: Boolean, styled: Styled, open: (AppEntry) -> Unit) {
     val context = LocalContext.current
-    val prefs by vm.prefs.collectAsState()
     var menu by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
-    val pinned = app.key in prefs.pinned
 
     Box {
         Text(
-            styled.text(StyleElement.DRAWER, vm.label(app)) + if (app.isWork) " [w]" else "",
+            styled.text(StyleElement.DRAWER, label) + if (app.isWork) " [w]" else "",
             style = styled.drawer,
             maxLines = 1,
             modifier = Modifier
@@ -153,7 +158,7 @@ private fun DrawerRow(vm: LauncherViewModel, app: AppEntry, styled: Styled, open
         }
     }
     if (renaming) {
-        RenameDialog(app.label, vm.label(app), onDismiss = { renaming = false }) {
+        RenameDialog(app.label, label, onDismiss = { renaming = false }) {
             vm.rename(app.key, it)
             renaming = false
         }
