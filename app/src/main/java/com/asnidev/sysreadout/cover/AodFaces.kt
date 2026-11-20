@@ -157,7 +157,8 @@ object AodFaces {
                     val dist = head - r
                     if (dist in 0..5) MATRIX_CHARS[Random(c * 131 + r * 17 + step).nextInt(MATRIX_CHARS.length)].toString() else " "
                 },
-                Role.DIM,
+                Role.ART,
+                LineAlign.CENTER,
             )
         }.toMutableList()
         val mid = MATRIX_ROWS / 2

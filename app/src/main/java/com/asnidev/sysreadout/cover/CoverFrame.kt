@@ -1,7 +1,11 @@
 package com.asnidev.sysreadout.cover
 
-/** How a line is drawn: BIG uses the clock style, the rest the log style (DIM in the date colour). */
-enum class Role { BIG, TEXT, DIM, INVERSE }
+/**
+ * How a line is drawn: BIG uses the clock style, the rest the log style (DIM in the
+ * date colour). ART is a row of an animated look's character grid: drawn dim, sized
+ * so the grid fills the screen's width, and centred.
+ */
+enum class Role { BIG, TEXT, DIM, INVERSE, ART }
 
 enum class LineAlign { START, CENTER }
 

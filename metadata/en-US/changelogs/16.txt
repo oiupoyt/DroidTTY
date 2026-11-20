@@ -1,0 +1,1 @@
+Animated always-on looks fill the screen's width and sit centred on every phone. The shade can start below the camera hole so no text hides behind it (on by default). With the lock service on there's no permanent notification any more.

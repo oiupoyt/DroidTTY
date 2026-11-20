@@ -109,6 +109,8 @@ data class CoverPrefs(
     val shadeRows: List<String> = listOf("bat", "net", "mem", "up"),
     /** Close the shade after opening a notification or a settings panel. */
     val shadeCloseOnOpen: Boolean = true,
+    /** Start the shade below the camera hole (display cutout), so no text sits behind it. */
+    val shadeBelowCutout: Boolean = true,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -128,6 +130,7 @@ data class CoverPrefs(
         .put("shadeToggles", JSONArray(shadeToggles))
         .put("shadeRows", JSONArray(shadeRows))
         .put("shadeCloseOnOpen", shadeCloseOnOpen)
+        .put("shadeBelowCutout", shadeBelowCutout)
         .toString()
 
     companion object {
@@ -175,6 +178,7 @@ data class CoverPrefs(
                 shadeToggles = strings(o, "shadeToggles")?.distinct() ?: d.shadeToggles,
                 shadeRows = strings(o, "shadeRows")?.distinct() ?: d.shadeRows,
                 shadeCloseOnOpen = o.optBoolean("shadeCloseOnOpen", d.shadeCloseOnOpen),
+                shadeBelowCutout = o.optBoolean("shadeBelowCutout", d.shadeBelowCutout),
             )
         }
 

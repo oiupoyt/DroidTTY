@@ -30,7 +30,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
@@ -54,6 +54,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.ShadeSection
@@ -88,6 +89,8 @@ fun ShadeContent(
     close: () -> Unit,
     systemShade: () -> Unit,
     prefs: CoverPrefs = CoverPrefs(),
+    /** Height of the status bar or camera cutout, whichever reaches lower. */
+    topInset: Dp = 0.dp,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -126,7 +129,10 @@ fun ShadeContent(
         Modifier
             .fillMaxSize()
             .background(styled.background)
-            .systemBarsPadding()
+            // Overlay windows often get no insets, so the space above is measured from the display:
+            // below the camera hole and status bar, or the bare edge when switched off.
+            .padding(top = if (prefs.shadeBelowCutout) topInset else 0.dp)
+            .navigationBarsPadding()
             .pointerInput(Unit) {
                 var drag = 0f
                 detectVerticalDragGestures(onDragStart = { drag = 0f }, onDragEnd = { if (drag < -160f) close() }) { _, dy -> drag += dy }

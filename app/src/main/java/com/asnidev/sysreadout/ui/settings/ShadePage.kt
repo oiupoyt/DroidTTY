@@ -41,6 +41,11 @@ fun ShadePage(vm: LauncherViewModel) {
     }
     Toggle("close after opening something", c.shadeCloseOnOpen) { v -> set { it.copy(shadeCloseOnOpen = v) } }
     Note(if (c.shadeCloseOnOpen) "opening a notification or a settings panel closes the shade." else "the shade stays open behind what you opened.")
+    Toggle("start below the camera hole", c.shadeBelowCutout) { v -> set { it.copy(shadeBelowCutout = v) } }
+    Note(
+        if (c.shadeBelowCutout) "the shade starts under the front camera's cutout, so no text sits behind it."
+        else "the shade uses the whole screen, up to the top edge; text can sit behind the camera.",
+    )
 
     Section("parts")
     Note("top to bottom. tap a name to hide or show it, ↑ ↓ to move it.")

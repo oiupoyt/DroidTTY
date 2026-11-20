@@ -41,8 +41,9 @@ def font(size):
 REF_FONT = font(REF)
 
 
-def lead(size):
-    return int(size * 1.08)
+def lead(size, role="TEXT"):
+    # Art rows sit close together so the grid reads as one picture.
+    return int(size * (1.0 if role == "ART" else 1.08))
 
 
 def full(l):
@@ -59,7 +60,7 @@ def fit(frames):
     room_w, room_h = W - 2 * MARGIN, BOTTOM - TOP
     lines = [l for f in frames for l in f["lines"]]
     text = TEXT_MAX
-    small = [ref_width(l) for l in lines if l["role"] != "BIG"]
+    small = [ref_width(l) for l in lines if l["role"] not in ("BIG", "ART")]
     if small:
         text = min(text, room_w * REF / max(small))
     big_w = max((ref_width(l) for l in lines if l["role"] == "BIG"), default=0)
@@ -71,12 +72,23 @@ def fit(frames):
             continue
         n_big = sum(l["role"] == "BIG" for l in f["lines"])
         n_text = len(f["lines"]) - n_big
-        units = 1.08 * (n_text + n_big * BIG_RATIO)
+        n_art = sum(l["role"] == "ART" for l in f["lines"])
+        units = 1.08 * (n_text - n_art + n_big * BIG_RATIO)
         if units:
             text = min(text, room_h / units)
     text = int(max(TEXT_MIN, text))
     big = int(min(text * BIG_RATIO, room_w * REF / big_w if big_w else 1e9))
-    sizes = {"TEXT": text, "DIM": text, "INVERSE": text, "BIG": big}
+    # Animated looks' art fills the width, as on the phone (CoverView sizes ART the same way).
+    art_w = max((ref_width(l) for l in lines if l["role"] == "ART"), default=0)
+    art = room_w * REF / art_w if art_w else text
+    for f in frames:
+        n_art = sum(l["role"] == "ART" for l in f["lines"])
+        if n_art:
+            n_big = sum(l["role"] == "BIG" for l in f["lines"])
+            rest = 1.08 * ((len(f["lines"]) - n_art - n_big) * text + n_big * big)
+            art = min(art, (room_h - rest) / n_art)
+    art = int(max(TEXT_MIN, art))
+    sizes = {"TEXT": text, "DIM": text, "INVERSE": text, "BIG": big, "ART": art}
     fonts = {r: font(v) for r, v in sizes.items()}
     # Left edge for START lines: the widest START block of any frame, centred.
     starts = [fonts[l["role"]].getlength(full(l)) for l in lines if l["align"] == "START"]
@@ -91,7 +103,7 @@ def render(frame, layout):
     glow = Image.new("RGB", (W, H), (0, 0, 0))
     draws = [ImageDraw.Draw(img), ImageDraw.Draw(glow)]
     lines = frame["lines"]
-    total = sum(lead(sizes[l["role"]]) for l in lines)
+    total = sum(lead(sizes[l["role"]], l["role"]) for l in lines)
     if frame["centered"]:
         y = TOP + max(0, (BOTTOM - TOP - total) // 2)
     elif frame["tail"]:
@@ -99,7 +111,7 @@ def render(frame, layout):
     else:
         y = TOP
     for l in lines:
-        h = lead(sizes[l["role"]])
+        h = lead(sizes[l["role"]], l["role"])
         if y < TOP or y + h > BOTTOM:  # only whole lines, never across the margins
             y += h
             continue
@@ -108,7 +120,7 @@ def render(frame, layout):
         mark = l["mark"]
         tw = draws[0].textlength(mark + text, font=f)
         x = (W - tw) / 2 if l["align"] == "CENTER" else left
-        color = DIM if l["role"] == "DIM" else FG
+        color = DIM if l["role"] in ("DIM", "ART") else FG
         for d in draws:
             if l["role"] == "INVERSE":
                 d.rectangle([x - 2, y, x + tw + 2, y + h], fill=FG)

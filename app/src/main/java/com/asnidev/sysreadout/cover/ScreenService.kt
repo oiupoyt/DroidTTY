@@ -177,10 +177,14 @@ class ScreenService : Service() {
         private const val CHANNEL = "screen"
         private const val NOTIFICATION_ID = 41
 
-        /** Starts or stops the service to match [prefs]; call while SysReadout is in the foreground. */
+        /**
+         * Starts or stops the service to match [prefs]; call while DroidTTY is in the foreground.
+         * With the lock service on it isn't needed at all (the lock service hears the screen
+         * events itself), so there's no notification; it's only the fallback without it.
+         */
         fun sync(context: Context, prefs: CoverPrefs, safeMode: Boolean) {
             val intent = Intent(context, ScreenService::class.java)
-            if (prefs.needsService && !safeMode) {
+            if (prefs.needsService && !safeMode && !CoverHost.available) {
                 runCatching { ContextCompat.startForegroundService(context, intent) }
                     .onFailure { Log.w(TAG, "couldn't start the screen service", it) }
             } else {

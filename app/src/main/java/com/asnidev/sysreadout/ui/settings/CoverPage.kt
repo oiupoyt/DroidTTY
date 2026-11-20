@@ -153,8 +153,9 @@ fun CoverPage(vm: LauncherViewModel, open: (Page) -> Unit = {}) {
     Section("access")
     Note(
         "the lock service (android's accessibility settings) lets droidtty draw these above the lock screen " +
-            "and status bar and wake the screen. it reads no screen content. the own lock and the shade need it; " +
-            "the always-on display and boot screen work without it through \"display over other apps\", less reliably.",
+            "and status bar and wake the screen. it reads no screen content. the own lock and the shade need it. " +
+            "with it on there's no permanent notification; without it, the always-on display and boot screen fall " +
+            "back to \"display over other apps\" and a background service that android requires to show a notification.",
     )
     SettingRow("lock service", if (host) "on" else "turn on ›") { if (!host) SystemActions.openAccessibilitySettings(context) }
     if (!host) {

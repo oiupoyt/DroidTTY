@@ -234,7 +234,7 @@ object AsciiAnim {
         val score = String.format(Locale.US, "%02d   %02d", if (d.is24h) d.now.hour else (d.now.hour + 11) % 12 + 1, d.now.minute)
         score.forEachIndexed { i, c -> put(rows, W / 2 - score.length / 2 + i, 2, c) }
         return CoverFrame(
-            rows.map { CoverLine(String(it)) } +
+            rows.map { CoverLine(String(it), Role.ART, LineAlign.CENTER) } +
                 listOf(blank(), CoverLine(d.clock, Role.BIG, LineAlign.CENTER), CoverLine(d.date, Role.DIM, LineAlign.CENTER)),
             centered = true,
         )
@@ -330,7 +330,7 @@ object AsciiAnim {
      * art) so the time is always readable over the motion.
      */
     private fun withClock(rows: Array<CharArray>, d: CoverData, top: Boolean = false, below: Boolean = false): CoverFrame {
-        val art = rows.map { CoverLine(String(it), Role.DIM) }
+        val art = rows.map { CoverLine(String(it), Role.ART, LineAlign.CENTER) }
         val clock = listOf(CoverLine(d.clock, Role.BIG, LineAlign.CENTER), CoverLine(d.date, align = LineAlign.CENTER))
         val lines = when {
             below -> art + listOf(blank()) + clock

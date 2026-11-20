@@ -19,6 +19,14 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -73,6 +81,22 @@ fun CoverView(
         else -> Alignment.Start
     }
     val quiet = remember { MutableInteractionSource() }
+    // ART rows are a character grid: one font size for the whole grid, the largest at which
+    // its widest row fills the space between the margins (monospace, so width = chars × advance).
+    val artChars = remember(frame) { frame.lines.filter { it.role == Role.ART }.maxOfOrNull { it.text.length } ?: 0 }
+    val measurer = rememberTextMeasurer()
+    var widthPx by remember { mutableIntStateOf(0) }
+    val artStyle = remember(styled, artChars, widthPx) {
+        val base = styled.log.copy(color = styled.date.color, lineHeight = TextUnit.Unspecified)
+        if (artChars == 0 || widthPx == 0) {
+            base
+        } else {
+            val advance = measurer.measure("M".repeat(ART_PROBE), base).size.width.toFloat() / ART_PROBE
+            val target = widthPx / artChars.toFloat()
+            val size = (base.fontSize.value * target / advance).coerceIn(ART_MIN_SP, ART_MAX_SP)
+            base.copy(fontSize = size.sp, lineHeight = (size * ART_LINE_HEIGHT).sp)
+        }
+    }
     Box(
         modifier
             .fillMaxSize()
@@ -84,6 +108,7 @@ fun CoverView(
                 .fillMaxSize()
                 .systemBarsPadding()
                 .padding(horizontal = margin, vertical = 24.dp)
+                .onSizeChanged { widthPx = it.width }
                 .offset(nudgeX, nudgeY),
         ) {
             // A boot log keeps its newest line at the bottom edge and lets older ones scroll off the top.
@@ -106,7 +131,7 @@ fun CoverView(
                 // The lines move as one block as wide as the widest line: left edges stay lined
                 // up, and centred lines (clocks) centre within the block wherever it's placed.
                 Column(Modifier.width(IntrinsicSize.Max), horizontalAlignment = Alignment.Start) {
-                    frame.lines.forEach { line -> CoverText(line, styled, blinkOn, quiet, onAction) }
+                    frame.lines.forEach { line -> CoverText(line, styled, blinkOn, quiet, onAction, artStyle) }
                 }
             }
             bottom?.invoke()
@@ -121,11 +146,13 @@ private fun ColumnScope.CoverText(
     blinkOn: Boolean,
     quiet: MutableInteractionSource,
     onAction: ((String) -> Unit)?,
+    artStyle: TextStyle,
 ) {
     val style = when (line.role) {
         Role.BIG -> styled.clock
         Role.DIM -> styled.log.copy(color = styled.date.color)
         Role.TEXT, Role.INVERSE -> styled.log
+        Role.ART -> artStyle
     }
     val element = if (line.role == Role.BIG) StyleElement.CLOCK else StyleElement.LOG
     val inverse = line.role == Role.INVERSE
@@ -154,6 +181,11 @@ private fun annotated(line: CoverLine, text: String, accent: Color, blinkOn: Boo
 }
 
 private val DEFAULT_MARGIN = 20.dp
+private const val ART_PROBE = 20
+private const val ART_MIN_SP = 6f
+private const val ART_MAX_SP = 28f
+/** Rows close together, so the art reads as one picture rather than lines of text. */
+private const val ART_LINE_HEIGHT = 1.0f
 
 /** Burn-in shift for minute [minute]: steps around a small square, one position per minute. */
 fun burnInShift(minute: Long): Pair<Dp, Dp> {

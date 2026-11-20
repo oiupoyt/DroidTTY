@@ -20,6 +20,8 @@ import android.os.SystemClock
 import android.provider.MediaStore
 import android.provider.Settings
 import android.view.KeyEvent
+import android.view.WindowInsets
+import android.view.WindowManager
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.core.content.ContextCompat
 import com.asnidev.sysreadout.data.CoverPrefs
 import com.asnidev.sysreadout.data.LockScreenMode
@@ -99,7 +102,8 @@ class CoverHost(private val service: AccessibilityService) {
 
     private val shade = OverlayWindow(service, "shade", onBack = { closeShade() }) {
         val styled = rememberStyled(theme, 0)
-        ShadeContent(styled, toggles, close = ::closeShade, systemShade = ::systemShadeOnPurpose, prefs = prefs)
+        val inset = with(LocalDensity.current) { topInsetPx().toDp() }
+        ShadeContent(styled, toggles, close = ::closeShade, systemShade = ::systemShadeOnPurpose, prefs = prefs, topInset = inset)
     }
     private val strip = OverlayWindow(service, "shade strip") {
         // A downward pull that starts on the status bar opens the shade.
@@ -167,6 +171,8 @@ class CoverHost(private val service: AccessibilityService) {
 
     fun start() {
         active = this
+        // The lock service takes over the screen events, so the fallback service and its notification go.
+        service.stopService(Intent(service, ScreenService::class.java))
         ContextCompat.registerReceiver(
             service, events,
             IntentFilter().apply {
@@ -498,6 +504,22 @@ class CoverHost(private val service: AccessibilityService) {
 
     fun closeShade() {
         shade.hide()
+    }
+
+    /** How far down the status bar and the camera cutout reach, read from the display itself. */
+    private fun topInsetPx(): Int {
+        val cutout = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                service.getSystemService(WindowManager::class.java).currentWindowMetrics.windowInsets
+                    .getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout() or WindowInsets.Type.statusBars()).top
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                @Suppress("DEPRECATION")
+                service.getSystemService(WindowManager::class.java).defaultDisplay.cutout?.safeInsetTop ?: 0
+            } else {
+                0
+            }
+        }.getOrDefault(0)
+        return maxOf(cutout, statusBarHeight())
     }
 
     private fun statusBarHeight(): Int {

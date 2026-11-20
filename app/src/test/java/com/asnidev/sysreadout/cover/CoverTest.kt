@@ -449,7 +449,8 @@ class AnimatedLooksTest {
             val b = AodFaces.frame(look, d, tick = 10_000 + 3 * 1_000L / AsciiAnim.FPS)
             assertFalse("$look doesn't move", a == b)
             assertTrue("$look has no clock", a.lines.any { it.text == "21:04" })
-            a.lines.filter { it.role == Role.DIM }.forEach { assertTrue("$look overflows", it.text.length <= AsciiAnim.W) }
+            a.lines.filter { it.role == Role.ART }.forEach { assertTrue("$look overflows", it.text.length <= AsciiAnim.W) }
+            assertTrue("$look has no art", a.lines.count { it.role == Role.ART } >= 10)
         }
     }
 
@@ -468,7 +469,7 @@ class AnimatedLooksTest {
     fun animatedLooksShowNoDataTheyDontHave() {
         val bare = d.copy(battery = null)
         animated.forEach { look ->
-            val text = AodFaces.frame(look, bare, 5_000).lines.filter { it.role != Role.DIM }.joinToString("\n") { it.text }
+            val text = AodFaces.frame(look, bare, 5_000).lines.filter { it.role != Role.ART }.joinToString("\n") { it.text }
             assertFalse("$look shows a battery level", Regex("\\d+%").containsMatchIn(text))
         }
     }
@@ -539,5 +540,27 @@ class LifeCacheTest {
         val inOrder = (0..40).map { AsciiAnim.life(d, it * 1_000L) }
         val backwards = (40 downTo 0).map { AsciiAnim.life(d, it * 1_000L) }.reversed()
         assertEquals(inOrder, backwards)
+    }
+}
+
+class ArtGridTest {
+    private val d = CoverData(now = ZonedDateTime.of(2026, 11, 21, 0, 50, 0, 0, ZoneOffset.UTC), is24h = true)
+
+    @Test
+    fun animatedArtIsAFullCentredGrid() {
+        // Every row the same width and centred: the phone sizes the grid to the screen and centres it.
+        (AodLook.entries.filter { it.animated }).forEach { look ->
+            val art = AodFaces.frame(look, d, 7_000).lines.filter { it.role == Role.ART }
+            assertTrue("$look has art", art.isNotEmpty())
+            assertEquals("$look rows differ in width", 1, art.map { it.text.length }.toSet().size)
+            assertTrue("$look art not centred", art.all { it.align == LineAlign.CENTER })
+        }
+    }
+
+    @Test
+    fun shadeCutoutDefaultsOnAndRoundTrips() {
+        assertTrue(CoverPrefs().shadeBelowCutout)
+        val off = CoverPrefs(shadeBelowCutout = false)
+        assertEquals(off, CoverPrefs.fromJson(off.toJson()))
     }
 }
