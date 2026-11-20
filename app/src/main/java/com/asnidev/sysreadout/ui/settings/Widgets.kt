@@ -154,32 +154,31 @@ fun <T> Choose(
         text = {
             // Bounded height: a lazy list given unlimited height throws, which is what crashed the look picker.
             LazyColumn(Modifier.heightIn(max = CHOOSER_MAX_HEIGHT)) {
-                var last: String? = null
-                options.forEach { option ->
-                    val g = group?.invoke(option)
-                    if (g != null && g != last) {
-                        last = g
-                        item(key = "g:$g") {
+                chooserSections(options, group).forEachIndexed { s, (g, members) ->
+                    if (g != null) {
+                        item(key = "g$s") {
                             Text("## $g", style = Type.small, color = Palette.log, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
                         }
                     }
-                    item(key = "o:${options.indexOf(option)}") {
-                        val selected = option == value
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onChange(option)
-                                    open = false
-                                }
-                                .padding(vertical = 8.dp),
-                        ) {
-                            Text(
-                                (if (selected) "> " else "  ") + title(option),
-                                style = Type.row,
-                                color = if (selected) Palette.log else Palette.fg,
-                            )
-                            detail(option)?.let { Text("  $it", style = Type.small, color = Palette.dim) }
+                    members.forEachIndexed { i, option ->
+                        item(key = "o$s.$i") {
+                            val selected = option == value
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onChange(option)
+                                        open = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                            ) {
+                                Text(
+                                    (if (selected) "> " else "  ") + title(option),
+                                    style = Type.row,
+                                    color = if (selected) Palette.log else Palette.fg,
+                                )
+                                detail(option)?.let { Text("  $it", style = Type.small, color = Palette.dim) }
+                            }
                         }
                     }
                 }
@@ -190,3 +189,18 @@ fun <T> Choose(
 }
 
 private val CHOOSER_MAX_HEIGHT = 460.dp
+
+/**
+ * Options gathered per group, groups in first-seen order. A group's header shows
+ * once even when its members aren't next to each other: the look list has still
+ * looks on both sides of matrix rain, and a header per run gave two lists the same
+ * key, which crashed the picker.
+ */
+fun <T> chooserSections(options: List<T>, group: ((T) -> String)?): List<Pair<String?, List<T>>> =
+    if (group == null) listOf(null to options) else options.groupBy(group).toList()
+
+/** Every key the chooser's list uses, in order; all distinct. */
+fun <T> chooserKeys(options: List<T>, group: ((T) -> String)?): List<String> =
+    chooserSections(options, group).flatMapIndexed { s, (g, members) ->
+        (if (g != null) listOf("g$s") else emptyList()) + members.indices.map { "o$s.$it" }
+    }
