@@ -211,7 +211,11 @@ object AsciiAnim {
         put(rows, bx.roundToInt().coerceIn(2, W - 3), by.roundToInt().coerceIn(1, H - 2), 'o')
         val score = String.format(Locale.US, "%02d   %02d", if (d.is24h) d.now.hour else (d.now.hour + 11) % 12 + 1, d.now.minute)
         score.forEachIndexed { i, c -> put(rows, W / 2 - score.length / 2 + i, 2, c) }
-        return CoverFrame(rows.map { CoverLine(String(it)) } + listOf(CoverLine(d.date, Role.DIM, LineAlign.CENTER)), centered = true)
+        return CoverFrame(
+            rows.map { CoverLine(String(it)) } +
+                listOf(blank(), CoverLine(d.clock, Role.BIG, LineAlign.CENTER), CoverLine(d.date, Role.DIM, LineAlign.CENTER)),
+            centered = true,
+        )
     }
 
     /** Classic demoscene plasma in ASCII density. */
