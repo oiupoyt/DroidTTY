@@ -22,6 +22,8 @@ object AsciiAnim {
     /** Frames per second each look is drawn at; the battery cost follows. */
     const val FPS = 10
     private const val LIFE_STEP_MS = 200L
+    private const val GLIDER_EVERY = 12
+    private val GLIDER = listOf(1 to 0, 2 to 1, 0 to 2, 1 to 2, 2 to 2)
 
     /** Density ramp, dark to bright. */
     private const val RAMP = " .:-=+*#%@"
@@ -64,9 +66,18 @@ object AsciiAnim {
 
     /** Conway's Life from a seed that changes every minute, five generations a second. */
     fun life(d: CoverData, ms: Long): CoverFrame {
-        val gen = (ms % 60_000L) / LIFE_STEP_MS
-        var grid = Array(H) { y -> BooleanArray(W) { x -> hash(x + y * W, d.now.minute + 7) > 0.68 } }
-        repeat(gen.toInt()) { grid = step(grid) }
+        val gen = ((ms % 60_000L) / LIFE_STEP_MS).toInt()
+        var grid = Array(H) { y -> BooleanArray(W) { x -> hash(x + y * W, d.now.minute + 7) > 0.6 } }
+        for (g in 0 until gen) {
+            // A glider dropped in every couple of seconds, so the board never settles into still blocks.
+            if (g % GLIDER_EVERY == GLIDER_EVERY - 1) {
+                val n = g / GLIDER_EVERY
+                val gx = (hash(n, d.now.minute + 31) * W).toInt()
+                val gy = (hash(n, d.now.minute + 47) * H).toInt()
+                GLIDER.forEach { (dx, dy) -> grid[(gy + dy) % H][(gx + dx) % W] = true }
+            }
+            grid = step(grid)
+        }
         val rows = Array(H) { y -> CharArray(W) { x -> if (grid[y][x]) 'o' else ' ' } }
         return withClock(rows, d)
     }
@@ -110,7 +121,7 @@ object AsciiAnim {
     fun rain(d: CoverData, ms: Long): CoverFrame {
         val rows = grid()
         val t = ms / 1000.0
-        for (i in 0 until 26) {
+        for (i in 0 until 40) {
             val x = (hash(i, 11) * W).toInt()
             val speed = 4 + hash(i, 12) * 9
             val len = 2 + (hash(i, 13) * 4).toInt()
