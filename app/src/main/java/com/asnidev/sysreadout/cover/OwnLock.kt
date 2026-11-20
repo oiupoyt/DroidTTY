@@ -57,6 +57,7 @@ fun OwnLockContent(
     place: Placement? = null,
     keypad: KeypadLayout = KeypadLayout.FULL,
     keypadLift: Int = 0,
+    shuffle: Boolean = true,
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
@@ -69,8 +70,8 @@ fun OwnLockContent(
     var checking by remember { mutableStateOf(false) }
     var granted by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    // A fresh digit order for every lock, so smudges and a watcher learn less.
-    val order = remember { Keypad.shuffled(SecureRandom()) }
+    // A fresh digit order for every lock, so smudges and a watcher learn less; or the phone layout.
+    val order = remember(shuffle) { if (shuffle) Keypad.shuffled(SecureRandom()) else Keypad.STANDARD }
     val shake = remember { Animatable(0f) }
 
     LaunchedEffect(preset) {
@@ -228,6 +229,9 @@ private fun Key(
 }
 
 object Keypad {
+    /** 1 to 9 in rows, 0 under 8: a phone's own layout. */
+    val STANDARD: List<Char> = "1234567890".toList()
+
     /** The ten digits in a random order. */
     fun shuffled(random: java.util.Random): List<Char> = ('0'..'9').toMutableList().apply { shuffle(random) }
 }

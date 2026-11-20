@@ -388,3 +388,19 @@ class PlacementTest {
         assertEquals(CoverPrefs.RANGE_LIFT.last, p.keypadLift)
     }
 }
+
+class ShuffleToggleTest {
+
+    @Test
+    fun standardLayoutIsThePhonesOwn() {
+        assertEquals("1234567890".toList(), Keypad.STANDARD)
+    }
+
+    @Test
+    fun shuffleIsOnByDefaultAndRoundTrips() {
+        assertTrue(CoverPrefs().shuffleKeypad)
+        val off = CoverPrefs(shuffleKeypad = false)
+        assertEquals(off, CoverPrefs.fromJson(off.toJson()))
+        assertTrue("older settings keep shuffling", CoverPrefs.fromJson("{}").shuffleKeypad)
+    }
+}

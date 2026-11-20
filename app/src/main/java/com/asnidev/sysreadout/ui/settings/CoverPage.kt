@@ -258,6 +258,11 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
                     KeypadLayout.RIGHT -> "right hand"
                 }
             }) { v -> vm.updateCover { it.copy(keypad = v) } }
+            Toggle("shuffle digits", c.shuffleKeypad) { v -> vm.updateCover { it.copy(shuffleKeypad = v) } }
+            Note(
+                if (c.shuffleKeypad) "a new digit order every time: smudges and someone watching learn less, but you have to look for each key."
+                else "the usual phone layout, 1 to 9 with 0 at the bottom: faster, and your thumb learns it.",
+            )
             Stepper(
                 "keypad height",
                 if (c.keypadLift == 0) "bottom" else "+${c.keypadLift}dp",

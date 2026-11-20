@@ -1,0 +1,1 @@
+Own lock: shuffle digits can be switched off for the usual keypad. SysReadout's shade now replaces Android's when Android's wins the swipe from the top, and the strip that catches the swipe is taller.

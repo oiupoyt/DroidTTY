@@ -88,6 +88,8 @@ data class CoverPrefs(
     val keypad: KeypadLayout = KeypadLayout.FULL,
     /** Raises the own lock's keypad off the bottom edge, in dp. */
     val keypadLift: Int = 0,
+    /** Digits in a new random order each time the own lock shows. */
+    val shuffleKeypad: Boolean = true,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -101,6 +103,7 @@ data class CoverPrefs(
         .put("aodPlace", aodPlace.toJson()).put("aodColor", aodColor.name)
         .put("aodShift", aodShift).put("aodTimeoutMin", aodTimeoutMin)
         .put("lockPlace", lockPlace.toJson()).put("keypad", keypad.name).put("keypadLift", keypadLift)
+        .put("shuffleKeypad", shuffleKeypad)
         .toString()
 
     companion object {
@@ -139,6 +142,7 @@ data class CoverPrefs(
                 lockPlace = Placement.fromJson(o.optJSONObject("lockPlace"), d.lockPlace),
                 keypad = enumOr(o.optString("keypad"), d.keypad),
                 keypadLift = o.optInt("keypadLift", d.keypadLift).coerceIn(RANGE_LIFT),
+                shuffleKeypad = o.optBoolean("shuffleKeypad", d.shuffleKeypad),
             )
         }
 
