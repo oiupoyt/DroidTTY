@@ -85,7 +85,7 @@ object CrashGuard {
     private fun describe(thread: Thread, e: Throwable, sinceStart: Long, loop: Boolean): String {
         val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US))
         return buildString {
-            append("SysReadout ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            append("DroidTTY ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             append(" · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}\n")
             append("$stamp · thread ${thread.name} · ${sinceStart / 1000}s after start")
             if (loop) append(" · safe mode switched on")

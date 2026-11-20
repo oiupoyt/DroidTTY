@@ -16,4 +16,7 @@
     </style>
     <color name="bg">#FF050807</color>
     <color name="icon_fg">#FF3DFF8A</color>
+    <color name="icon_dim">#FF1FB860</color>
+    <color name="icon_glow">#3326FF7A</color>
+    <color name="icon_scan">#22000000</color>
 </resources>

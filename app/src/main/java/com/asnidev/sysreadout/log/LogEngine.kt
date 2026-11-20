@@ -174,7 +174,7 @@ class LogEngine(
             started = true
             val m = monitor.value
             // Kept short: stream lines don't wrap, and these must fit a narrow phone.
-            emit("log", "sysreadout up")
+            emit("log", "droidtty up")
             emit(
                 "log",
                 "shizuku ${shizuku.state.value.label}" +

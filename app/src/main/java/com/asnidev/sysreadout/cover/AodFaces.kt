@@ -17,13 +17,26 @@ object AodFaces {
         AodLook.HTOP -> htop(d)
         AodLook.MATRIX -> matrix(d, tick)
         AodLook.BINARY -> binary(d)
+        AodLook.FIRE -> AsciiAnim.fire(d, tick)
+        AodLook.STARFIELD -> AsciiAnim.starfield(d, tick)
+        AodLook.LIFE -> AsciiAnim.life(d, tick)
+        AodLook.CUBE -> AsciiAnim.cube(d, tick)
+        AodLook.RAIN -> AsciiAnim.rain(d, tick)
+        AodLook.AQUARIUM -> AsciiAnim.aquarium(d, tick)
+        AodLook.SCOPE -> AsciiAnim.scope(d, tick)
+        AodLook.PONG -> AsciiAnim.pong(d, tick)
+        AodLook.PLASMA -> AsciiAnim.plasma(d, tick)
+        AodLook.HELIX -> AsciiAnim.helix(d, tick)
     }
 
     /** How often each look needs a redraw, in ms. */
-    fun refreshMs(look: AodLook): Long = when (look) {
-        AodLook.MATRIX -> 500L
-        AodLook.PROMPT, AodLook.TTY, AodLook.BINARY -> 1_000L
-        else -> 60_000L
+    fun refreshMs(look: AodLook): Long = when {
+        look == AodLook.MATRIX -> 500L
+        look.animated -> 1_000L / AsciiAnim.FPS
+        else -> when (look) {
+            AodLook.PROMPT, AodLook.TTY, AodLook.BINARY -> 1_000L
+            else -> 60_000L
+        }
     }
 
     private fun clock(d: CoverData) = CoverFrame(

@@ -127,7 +127,7 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleInstance"
-            android:taskAffinity="com.sysreadout.cover"
+            android:taskAffinity="${applicationId}.cover"
             android:theme="@style/Theme.SysReadout.Cover" />
 
         <!-- Invisible: opens Android's PIN pad straight from the boot screen. -->
@@ -137,7 +137,7 @@
             android:exported="false"
             android:launchMode="singleInstance"
             android:noHistory="true"
-            android:taskAffinity="com.sysreadout.unlock"
+            android:taskAffinity="${applicationId}.unlock"
             android:theme="@style/Theme.SysReadout.Unlock" />
 
         <service

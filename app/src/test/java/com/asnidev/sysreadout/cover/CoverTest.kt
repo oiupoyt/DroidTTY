@@ -431,3 +431,40 @@ class AodStaysTest {
         assertTrue(ScreenPolicy.isNear(1f, 1.5f))
     }
 }
+
+class AnimatedLooksTest {
+
+    private val d = CoverData(
+        now = ZonedDateTime.of(2026, 11, 20, 21, 4, 0, 0, ZoneOffset.UTC), is24h = true, battery = 70,
+        manufacturer = "Nothing", model = "A065", device = "Pacman", android = "16", api = 36,
+    )
+    private val animated = AodLook.entries.filter { it.animated && it != AodLook.MATRIX }
+
+    @Test
+    fun everyAnimatedLookMovesKeepsTheClockAndFitsTheGrid() {
+        assertEquals(10, animated.size)
+        animated.forEach { look ->
+            val a = AodFaces.frame(look, d, tick = 10_000)
+            val b = AodFaces.frame(look, d, tick = 10_000 + 3 * 1_000L / AsciiAnim.FPS)
+            assertFalse("$look doesn't move", a == b)
+            assertTrue("$look has no clock", a.lines.any { it.text == "21:04" })
+            a.lines.filter { it.role == Role.DIM }.forEach { assertTrue("$look overflows", it.text.length <= AsciiAnim.W) }
+        }
+    }
+
+    @Test
+    fun framesAreRepeatable() {
+        animated.forEach { look -> assertEquals(look.name, AodFaces.frame(look, d, 12_345), AodFaces.frame(look, d, 12_345)) }
+    }
+
+    @Test
+    fun animatedLooksRedrawAtTheirRate() {
+        animated.forEach { assertEquals(100L, AodFaces.refreshMs(it)) }
+        assertEquals(60_000L, AodFaces.refreshMs(AodLook.CLOCK))
+    }
+
+    @Test
+    fun pongScoreIsTheTime() {
+        assertTrue(AsciiAnim.pong(d, 0).lines.any { it.text.contains("21   04") })
+    }
+}

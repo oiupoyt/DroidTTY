@@ -25,7 +25,7 @@ import com.asnidev.sysreadout.ui.FontOption
 import com.asnidev.sysreadout.ui.Fonts
 import com.asnidev.sysreadout.ui.Type
 
-private const val REPO = "https://github.com/AndSni/SysReadout-Launcher"
+private const val REPO = "https://github.com/oiupoyt/DroidTTY"
 
 @Composable
 fun AboutPage() {
@@ -35,7 +35,7 @@ fun AboutPage() {
     var report by remember { mutableStateOf(CrashGuard.report(context)) }
     var reading by remember { mutableStateOf(false) }
 
-    Section("sysreadout launcher")
+    Section("droidtty launcher")
     Note("v${BuildConfig.VERSION_NAME} · free software under the GNU GPL v3")
     Link("source code and issues", "github ›") { SystemActions.openUrl(context, REPO) }
 
@@ -49,7 +49,7 @@ fun AboutPage() {
         }
         Link("share it", "›") {
             val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                .putExtra(Intent.EXTRA_SUBJECT, "SysReadout crash report")
+                .putExtra(Intent.EXTRA_SUBJECT, "DroidTTY crash report")
                 .putExtra(Intent.EXTRA_TEXT, text)
             SystemActions.open(context, Intent.createChooser(send, "share the crash report"))
         }

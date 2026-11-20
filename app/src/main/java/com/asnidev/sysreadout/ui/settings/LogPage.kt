@@ -148,7 +148,7 @@ private fun MonitorSection(vm: LauncherViewModel, open: (Page) -> Unit) {
     fun set(transform: (MonitorPrefs) -> MonitorPrefs) = vm.updateMonitor(transform)
 
     Section("system monitor")
-    Note("tables and events from what android lets sysreadout see. app activity needs usage access; the notification log needs notification access.")
+    Note("tables and events from what android lets droidtty see. app activity needs usage access; the notification log needs notification access.")
     Link("usage access", if (usageAccess) "granted" else "grant ›") { vm.engine.usage.openSettings() }
     Link("notification access", if (notifAccess) "granted" else "grant ›") { SystemActions.openNotificationAccess(context) }
     Link("shizuku", (if (m.shizuku) shizuku.label else "off · optional") + " ›") { open(Page.Shizuku) }

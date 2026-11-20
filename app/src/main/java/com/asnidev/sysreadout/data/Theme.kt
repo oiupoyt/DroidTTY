@@ -182,7 +182,7 @@ object Presets {
         TextSpec(font = font, size = size, bold = bold, spacing = spacing, case = case, color = color)
 
     val default = Preset(
-        "sysreadout",
+        "droidtty",
         Theme(
             background = 0xFF050807, accent = 0xFF3DDC84, backing = 0xFF050807,
             clock = spec("system-mono", 48f, 0xFFE8ECE9),

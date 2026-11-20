@@ -118,7 +118,7 @@ fun ShadeContent(styled: Styled, toggles: Toggles, close: () -> Unit, systemShad
             }
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        Text("sysreadout --shade", style = styled.log, color = styled.accent)
+        Text("droidtty --shade", style = styled.log, color = styled.accent)
         header.forEach { Text(it, style = styled.log, maxLines = 1, overflow = TextOverflow.Clip) }
         Spacer(Modifier.height(10.dp))
 

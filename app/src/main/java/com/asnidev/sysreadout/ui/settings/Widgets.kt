@@ -16,8 +16,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -113,11 +120,69 @@ fun Swatch(color: Long, sizeDp: Int, modifier: Modifier = Modifier, selected: Bo
 fun Header(path: List<String>, onBack: (() -> Unit)?) {
     Column(Modifier.padding(bottom = 4.dp)) {
         Text(
-            "sysreadout --config" + path.joinToString("") { " › $it" },
+            "droidtty --config" + path.joinToString("") { " › $it" },
             style = Type.entry,
             color = Palette.log,
             modifier = if (onBack != null) Modifier.clickable(onClick = onBack) else Modifier,
         )
         if (onBack != null) Note("tap here or press back to go up")
     }
+}
+
+/**
+ * A setting with many options: the row shows the current one; a tap lists them
+ * all, each with what it is, and one tap picks. [group] splits the list into
+ * headed sections.
+ */
+@Composable
+fun <T> Choose(
+    label: String,
+    value: T,
+    options: List<T>,
+    title: (T) -> String,
+    detail: (T) -> String? = { null },
+    group: ((T) -> String)? = null,
+    onChange: (T) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    SettingRow(label, title(value) + " ›") { open = true }
+    if (!open) return
+    AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text(label, style = Type.row) },
+        text = {
+            LazyColumn {
+                var last: String? = null
+                options.forEach { option ->
+                    val g = group?.invoke(option)
+                    if (g != null && g != last) {
+                        last = g
+                        item(key = "g:$g") {
+                            Text("## $g", style = Type.small, color = Palette.log, modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
+                        }
+                    }
+                    item(key = option.hashCode()) {
+                        val selected = option == value
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onChange(option)
+                                    open = false
+                                }
+                                .padding(vertical = 8.dp),
+                        ) {
+                            Text(
+                                (if (selected) "> " else "  ") + title(option),
+                                style = Type.row,
+                                color = if (selected) Palette.log else Palette.fg,
+                            )
+                            detail(option)?.let { Text("  $it", style = Type.small, color = Palette.dim) }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { open = false }) { Text("close", style = Type.row) } },
+    )
 }

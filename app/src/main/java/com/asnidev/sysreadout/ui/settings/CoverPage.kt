@@ -75,6 +75,38 @@ fun AodLook.title() = when (this) {
     AodLook.HTOP -> "htop meters"
     AodLook.MATRIX -> "matrix rain"
     AodLook.BINARY -> "binary clock"
+    AodLook.FIRE -> "doom fire"
+    AodLook.STARFIELD -> "starfield"
+    AodLook.LIFE -> "game of life"
+    AodLook.CUBE -> "spinning cube"
+    AodLook.RAIN -> "rain on glass"
+    AodLook.AQUARIUM -> "aquarium"
+    AodLook.SCOPE -> "oscilloscope"
+    AodLook.PONG -> "pong"
+    AodLook.PLASMA -> "plasma"
+    AodLook.HELIX -> "dna helix"
+}
+
+fun AodLook.detail(): String = when (this) {
+    AodLook.CLOCK -> "clock, date, battery and how many notifications are waiting"
+    AodLook.STATUS -> "clock and status rows you pick"
+    AodLook.PROMPT -> "a shell prompt answering date, battery and notifications"
+    AodLook.LOG -> "clock and the log's newest events"
+    AodLook.NEOFETCH -> "the arch logo beside this phone's system facts"
+    AodLook.TTY -> "the time in big block digits, seconds ticking"
+    AodLook.HTOP -> "cpu (needs shizuku), memory and battery meters"
+    AodLook.MATRIX -> "falling characters around the clock"
+    AodLook.BINARY -> "binary columns, read bottom up: 1 2 4 8"
+    AodLook.FIRE -> "flames licking up under the clock"
+    AodLook.STARFIELD -> "stars streaming out from the centre"
+    AodLook.LIFE -> "conway's cells evolving, a new seed every minute"
+    AodLook.CUBE -> "a wireframe cube turning on two axes"
+    AodLook.RAIN -> "drops sliding down into a rippling puddle"
+    AodLook.AQUARIUM -> "fish, bubbles and swaying seaweed"
+    AodLook.SCOPE -> "a scope trace; with shizuku it follows cpu load"
+    AodLook.PONG -> "two paddles rallying; the score is the time"
+    AodLook.PLASMA -> "demoscene plasma in ascii shading"
+    AodLook.HELIX -> "a double helix twisting upward"
 }
 
 fun LockPreset.title() = when (this) {
@@ -93,7 +125,7 @@ fun LockPreset.title() = when (this) {
 fun LockScreenMode.title() = when (this) {
     LockScreenMode.OFF -> "android's own"
     LockScreenMode.COVER -> "boot screen over android's"
-    LockScreenMode.OWN -> "sysreadout's own pin lock"
+    LockScreenMode.OWN -> "droidtty's own pin lock"
 }
 
 /** Always-on display, lock screen and shade: what each does, the access they need, and the looks. */
@@ -114,11 +146,11 @@ fun CoverPage(vm: LauncherViewModel) {
     val notify = remember(resumed) { canNotify(context) }
     val askNotify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumed++ }
 
-    if (safe) Note("paused while sysreadout is in safe mode (settings › safe mode › resume). the own lock stays on.")
+    if (safe) Note("paused while droidtty is in safe mode (settings › safe mode › resume). the own lock stays on.")
 
     Section("access")
     Note(
-        "the lock service (android's accessibility settings) lets sysreadout draw these above the lock screen " +
+        "the lock service (android's accessibility settings) lets droidtty draw these above the lock screen " +
             "and status bar and wake the screen. it reads no screen content. the own lock and the shade need it; " +
             "the always-on display and boot screen work without it through \"display over other apps\", less reliably.",
     )
@@ -136,7 +168,7 @@ fun CoverPage(vm: LauncherViewModel) {
     }
     if (!host) {
         Note(
-            "android 13+ greys the lock service out for apps installed from an apk: in sysreadout's app info, " +
+            "android 13+ greys the lock service out for apps installed from an apk: in droidtty's app info, " +
                 "⋮ › allow restricted settings, then try again.",
         )
     }
@@ -151,7 +183,7 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
     val context = LocalContext.current
     Section("always-on display")
     Note(
-        "after you turn the screen off, sysreadout turns it back on, very dim, with the look below. " +
+        "after you turn the screen off, droidtty turns it back on, very dim, with the look below. " +
             "tap it to go on. turning the screen off again, or covering the sensor (pocket, face down), " +
             "keeps it dark until the next unlock. it's skipped during calls. switch android's own always-on display off.",
     )
@@ -166,17 +198,17 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
         )
         Note("a lit screen uses battery even when dim and mostly black. below this level it waits for the charger.")
     }
-    Cycle("look", c.aodLook, AodLook.entries, show = { it.title() }) { v -> vm.updateCover { it.copy(aodLook = v) } }
-    when (c.aodLook) {
-        AodLook.CLOCK -> Note("clock, date, battery and how many notifications are waiting.")
-        AodLook.STATUS -> Note("clock and the status rows you pick below.")
-        AodLook.PROMPT -> Note("a shell prompt answering date, battery and notifications, with a blinking cursor.")
-        AodLook.LOG -> Note("clock and the log's newest events, from the last time the home screen was open.")
-        AodLook.NEOFETCH -> Note("the arch logo beside this phone's os, kernel, uptime, packages, cpu, memory and battery.")
-        AodLook.TTY -> Note("the time in big block digits, seconds ticking underneath.")
-        AodLook.HTOP -> Note("htop's meters: load per cpu core (needs shizuku), memory and battery.")
-        AodLook.MATRIX -> Note("falling characters around the clock. it redraws twice a second, so it costs the most battery.")
-        AodLook.BINARY -> Note("hours, minutes and seconds as binary columns: read each column bottom up, 1 2 4 8.")
+    Choose(
+        "look",
+        c.aodLook,
+        AodLook.entries,
+        title = { it.title() },
+        detail = { it.detail() },
+        group = { if (it.animated) "animated (more battery)" else "still" },
+    ) { v -> vm.updateCover { it.copy(aodLook = v) } }
+    Note(c.aodLook.detail() + ".")
+    if (c.aodLook.animated) {
+        Note("animated looks redraw several times a second, so a lit screen costs noticeably more than a still one. pair them with \"while charging\" if battery matters.")
     }
     if (c.aodLook == AodLook.STATUS) {
         Note("rows shown: tap one to remove it, or add one from the list.")
@@ -202,7 +234,7 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
     Note("brightness is a share of the screen's full range; most phones are readable indoors at 2%. the preview below doesn't dim.")
     PlacementRows(c.aodPlace, keepOwn = false) { v -> vm.updateCover { it.copy(aodPlace = v) } }
     Preview { AodContent(c, onTap = null) }
-    Note("android's screen saver can show the same look while charging: settings › display › screen saver › sysreadout.")
+    Note("android's screen saver can show the same look while charging: settings › display › screen saver › droidtty.")
     Link("open screen saver settings", "›") {
         SystemActions.open(context, Intent(Settings.ACTION_DREAM_SETTINGS))
     }
@@ -231,7 +263,7 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
         )
         LockScreenMode.OWN -> {
             Note(
-                "sysreadout locks the phone itself: the preset plays, then asks for your pin on a terminal keypad. " +
+                "droidtty locks the phone itself: the preset plays, then asks for your pin on a terminal keypad. " +
                     "5 wrong pins, then a wait that doubles each time, up to 15 minutes. sos opens the emergency dialer.",
             )
             if (!host) Note("not locking: the lock service is off (access, above). turn it on, or nothing guards the phone.")
@@ -246,7 +278,13 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
         }
     }
     if (c.lockScreen != LockScreenMode.OFF) {
-        Cycle("preset", c.lockPreset, LockPreset.entries, show = { it.title() }) { v -> vm.updateCover { it.copy(lockPreset = v) } }
+        Choose(
+            "preset",
+            c.lockPreset,
+            LockPreset.entries,
+            title = { it.title() },
+            detail = { presetNote(it, c.lockScreen == LockScreenMode.OWN) },
+        ) { v -> vm.updateCover { it.copy(lockPreset = v) } }
         Note(presetNote(c.lockPreset, c.lockScreen == LockScreenMode.OWN))
         PlacementRows(c.lockPlace, keepOwn = true) { v -> vm.updateCover { it.copy(lockPlace = v) } }
         if (c.lockScreen == LockScreenMode.OWN) {
@@ -279,7 +317,7 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
     if (confirmOwn) {
         AlertDialog(
             onDismissRequest = { confirmOwn = false },
-            title = { Text("sysreadout's own lock", style = Type.row) },
+            title = { Text("droidtty's own lock", style = Type.row) },
             text = {
                 Column {
                     Note("it needs the lock service and a pin. it has no fingerprint, and it doesn't encrypt your data the way android's lock does.")
@@ -310,10 +348,10 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
 private fun ShadeSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
     Section("notification shade")
     Note(
-        "sysreadout's own shade: battery, network and memory rows, quick toggles, what's playing and your notifications. " +
+        "droidtty's own shade: battery, network and memory rows, quick toggles, what's playing and your notifications. " +
             "it opens from a swipe down on the status bar or on home. [system shade] inside opens android's.",
     )
-    Toggle("sysreadout shade", c.shade) { v -> vm.updateCover { it.copy(shade = v) } }
+    Toggle("droidtty shade", c.shade) { v -> vm.updateCover { it.copy(shade = v) } }
     if (c.shade && !host) Note("the status-bar swipe needs the lock service (access, above); swiping down on home still opens it.")
     if (c.shade) {
         Note(

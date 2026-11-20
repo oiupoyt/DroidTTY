@@ -44,7 +44,7 @@ private val STAMP = DateTimeFormatter.ofPattern("HH:mm:ss")
 private fun stamp(time: Long): String = STAMP.format(Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault()))
 
 private val SAFE_MODE_LINES = listOf(
-    "safe  sysreadout crashed twice right after starting,",
+    "safe  droidtty crashed twice right after starting,",
     "      so it started in safe mode: the log, the system",
     "      monitor, shizuku, the dns monitor and your look",
     "      are paused. tap \"resume\" on the home screen to",

@@ -19,12 +19,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        // Public identity follows the com.<name>.app convention of the other apps.
-        applicationId = "com.sysreadout.app"
+        // DroidTTY, the oiupoyt fork: its own id, so it installs beside the original SysReadout.
+        applicationId = "space.oiupoyt.droidtty"
         minSdk = 26
         targetSdk = 36
-        versionCode = 12
-        versionName = "0.4.4"
+        versionCode = 13
+        versionName = "0.5.0"
     }
 
     signingConfigs {

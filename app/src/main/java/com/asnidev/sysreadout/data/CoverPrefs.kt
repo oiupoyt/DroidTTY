@@ -6,7 +6,13 @@ import org.json.JSONObject
 /** When SysReadout's own always-on display comes up after the screen turns off. */
 enum class AodMode { OFF, CHARGING, ALWAYS }
 
-enum class AodLook { CLOCK, STATUS, PROMPT, LOG, NEOFETCH, TTY, HTOP, MATRIX, BINARY }
+enum class AodLook {
+    CLOCK, STATUS, PROMPT, LOG, NEOFETCH, TTY, HTOP, MATRIX, BINARY,
+    FIRE, STARFIELD, LIFE, CUBE, RAIN, AQUARIUM, SCOPE, PONG, PLASMA, HELIX;
+
+    /** Redrawn several times a second: livelier, and it costs more battery. */
+    val animated: Boolean get() = ordinal >= FIRE.ordinal || this == MATRIX
+}
 
 /**
  * Where an always-on or lock screen sits. [vertical] null keeps the look's own

@@ -77,7 +77,7 @@ class DnsVpnService : VpnService() {
         }
         val fd = runCatching {
             Builder()
-                .setSession("SysReadout DNS monitor")
+                .setSession("DroidTTY DNS monitor")
                 .setMtu(MTU)
                 .addAddress(VPN_ADDRESS, 32)
                 .addRoute(DNS_ADDRESS, 32)

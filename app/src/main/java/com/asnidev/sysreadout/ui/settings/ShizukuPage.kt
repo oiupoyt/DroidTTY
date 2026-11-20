@@ -56,13 +56,13 @@ fun ShizukuPage(vm: LauncherViewModel) {
 
     Section("what it adds")
     Note(
-        "shizuku is a free app that lends sysreadout the access a computer's adb connection has, " +
+        "shizuku is a free app that lends droidtty the access a computer's adb connection has, " +
             "only while you allow it. with it the log also shows:",
     )
     FEATURES.forEach { Note("  · $it") }
     Note("it's optional: everything else works without it, and what it shows stays on the phone.")
     Toggle("use shizuku", m.shizuku) { v -> vm.updateMonitor { it.copy(shizuku = v) } }
-    if (safe) Note("paused while sysreadout is in safe mode (settings › safe mode › resume).")
+    if (safe) Note("paused while droidtty is in safe mode (settings › safe mode › resume).")
     if (!m.shizuku || safe) return
 
     val installed = state !in setOf(ShizukuState.OFF, ShizukuState.NOT_INSTALLED)
@@ -76,21 +76,21 @@ fun ShizukuPage(vm: LauncherViewModel) {
     Step(2, "shizuku running", running, "open shizuku ›") {
         if (!vm.shizuku.openApp()) toast(context, "shizuku isn't installed")
     }
-    Step(3, "sysreadout allowed", allowed, "allow ›") { vm.shizuku.requestPermission() }
+    Step(3, "droidtty allowed", allowed, "allow ›") { vm.shizuku.requestPermission() }
     Step(4, "connected", state == ShizukuState.READY, if (state == ShizukuState.FAILING) "retry now ›" else "…") {
         vm.shizuku.restartHelper()
     }
     when {
         state == ShizukuState.UNSUPPORTED -> Note("this shizuku is too old for sysreadout: update it.")
         state == ShizukuState.FAILING ->
-            Note("shizuku's helper kept failing, so sysreadout left it alone for a while. it retries by itself.")
+            Note("shizuku's helper kept failing, so droidtty left it alone for a while. it retries by itself.")
         state == ShizukuState.NO_PERMISSION ->
             Note("tap allow, then choose \"allow all the time\" in shizuku's dialog.")
         running && vm.shizuku.isSui -> Note("running through sui (root): nothing to start after a reboot.")
     }
     if (state == ShizukuState.READY && vm.shizuku.isDirect) {
         Note(
-            "connected through shizuku's own shell: sysreadout's helper couldn't start on this phone " +
+            "connected through shizuku's own shell: droidtty's helper couldn't start on this phone " +
                 "(a known problem on some android 16 roms). everything works except server names from " +
                 "reverse dns; names the dns monitor sees still show. \"retry helper\" tries the helper again.",
         )
@@ -108,7 +108,7 @@ fun ShizukuPage(vm: LauncherViewModel) {
                 "3. in shizuku, tap \"pairing\" under \"start via wireless debugging\". then in wireless " +
                     "debugging tap \"pair device with pairing code\" and type the code into shizuku's notification.",
             )
-            Note("4. in shizuku, tap \"start\". back here, allow sysreadout when shizuku asks.")
+            Note("4. in shizuku, tap \"start\". back here, allow droidtty when shizuku asks.")
         } else {
             Note("on android 10 and older shizuku is started from a computer with adb, once per boot; the shizuku app shows the command.")
         }
@@ -125,11 +125,11 @@ fun ShizukuPage(vm: LauncherViewModel) {
     } else {
         Note("without root, android stops shizuku at every reboot: start it again in the shizuku app.")
     }
-    Note("sysreadout notices when shizuku comes back and reconnects by itself.")
+    Note("droidtty notices when shizuku comes back and reconnects by itself.")
 
     if (state == ShizukuState.READY) {
         Section("one-tap setup")
-        Note("shizuku can also switch on sysreadout's other access for you. those stay on after shizuku stops.")
+        Note("shizuku can also switch on droidtty's other access for you. those stay on after shizuku stops.")
         Link("set up access with shizuku", "›") { setup = true }
     }
     if (setup) SetupDialog(vm) { setup = false }
@@ -153,7 +153,7 @@ private fun SetupDialog(vm: LauncherViewModel, onDismiss: () -> Unit) {
         title = { Text("set up with shizuku", style = Type.row) },
         text = {
             Column {
-                Note("switches these on for sysreadout, the same as you would in android's settings:")
+                Note("switches these on for droidtty, the same as you would in android's settings:")
                 ShizukuSetup.items.forEach { item ->
                     val result = results?.get(item)
                     val value = when {

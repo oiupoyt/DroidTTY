@@ -100,7 +100,7 @@ class ScreenService : Service() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL, "always-on display and lock cover", NotificationManager.IMPORTANCE_MIN).apply {
-                description = "Shown while SysReadout watches the screen turning off and on."
+                description = "Shown while DroidTTY watches the screen turning off and on."
                 setShowBadge(false)
             },
         )
@@ -109,7 +109,7 @@ class ScreenService : Service() {
         )
         val n = Notification.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
-            .setContentTitle("sysreadout screen")
+            .setContentTitle("droidtty screen")
             .setContentText("always-on display or lock cover is on")
             .setContentIntent(open)
             .setOngoing(true)

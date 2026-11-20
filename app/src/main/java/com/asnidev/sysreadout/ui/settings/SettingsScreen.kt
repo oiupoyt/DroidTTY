@@ -131,7 +131,7 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     if (safe) {
         Section("safe mode")
         Note(
-            "sysreadout crashed twice right after starting, so the log, the system monitor, shizuku, " +
+            "droidtty crashed twice right after starting, so the log, the system monitor, shizuku, " +
                 "the dns monitor and your look are paused. the crash report is under about.",
         )
         Link("resume", "switch everything back on ›") { vm.leaveSafeMode() }
@@ -231,7 +231,7 @@ private fun LockScreenSection(vm: LauncherViewModel) {
         if (v == LockMode.OFF && was != LockMode.OFF) scope.launch(Dispatchers.IO) { LockScreen.clear(context) }
     }
     when (prefs.lockMode) {
-        LockMode.OFF -> Note("SysReadout doesn't touch your lock-screen wallpaper. switching here from image or snapshot gives the lock screen your home wallpaper back.")
+        LockMode.OFF -> Note("DroidTTY doesn't touch your lock-screen wallpaper. switching here from image or snapshot gives the lock screen your home wallpaper back.")
         LockMode.IMAGE -> Link("choose image") { picker.launchOr(context, "no app to pick an image with", arrayOf("image/*")) }
         LockMode.SNAPSHOT -> {
             Link("update now") {

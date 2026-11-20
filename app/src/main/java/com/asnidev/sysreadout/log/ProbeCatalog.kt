@@ -64,7 +64,7 @@ object ProbeCatalog {
         ProbeInfo("kern", ProbeGroup.SYSTEM, "kernel release", true),
         ProbeInfo("props", ProbeGroup.SYSTEM, "A/B slot, verified boot, bootloader lock, treble, first API, build type"),
         ProbeInfo("dev", ProbeGroup.SYSTEM, "manufacturer, model, codename"),
-        ProbeInfo("self", ProbeGroup.SYSTEM, "SysReadout's own process: pid, memory, threads"),
+        ProbeInfo("self", ProbeGroup.SYSTEM, "DroidTTY's own process: pid, memory, threads"),
         ProbeInfo("cpu", ProbeGroup.COMPUTE, "online cores, current clock range, governor", true),
         ProbeInfo("cores", ProbeGroup.COMPUTE, "clock of every CPU core; with shizuku, its load in percent"),
         ProbeInfo("load", ProbeGroup.COMPUTE, "load average and process count", needs = Access.SHIZUKU),

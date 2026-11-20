@@ -82,7 +82,7 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
                 val opened = vm.cover.value.shade && CoverHost.active?.openShade() == true
                 if (!opened) {
                     if (vm.cover.value.shade && CoverHost.active == null) {
-                        Toast.makeText(context, "sysreadout shade needs the lock service · settings › screen", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "droidtty shade needs the lock service · settings › screen", Toast.LENGTH_SHORT).show()
                     }
                     SystemActions.expandNotifications(context)
                 }
