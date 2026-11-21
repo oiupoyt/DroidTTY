@@ -221,23 +221,26 @@ private fun AodSection(vm: LauncherViewModel, c: CoverPrefs, canShow: Boolean) {
             SettingRow("  ${probe.id}", "[ ]") { vm.updateCover { it.copy(aodRows = it.aodRows + probe.id) } }
         }
     }
-    Cycle("size", c.aodScale, CoverPrefs.SCALES, show = { "${(it * 100).toInt()}%" }) { v -> vm.updateCover { it.copy(aodScale = v) } }
-    Cycle("brightness", c.aodBrightness, CoverPrefs.BRIGHTNESS, show = { "$it%" }) { v -> vm.updateCover { it.copy(aodBrightness = v) } }
-    Cycle("colour", c.aodColor, AodColor.entries, show = {
-        when (it) {
-            AodColor.THEME -> "theme"
-            AodColor.ACCENT -> "accent only"
-            AodColor.DIM -> "dim only"
-            AodColor.MONO -> "white"
-        }
-    }) { v -> vm.updateCover { it.copy(aodColor = v) } }
-    Toggle("burn-in shift", c.aodShift) { v -> vm.updateCover { it.copy(aodShift = v) } }
-    Cycle("go dark after", c.aodTimeoutMin, CoverPrefs.TIMEOUTS, show = { if (it == 0) "never" else "$it min" }) { v ->
-        vm.updateCover { it.copy(aodTimeoutMin = v) }
-    }
-    Note("brightness is a share of the screen's full range; most phones are readable indoors at 2%. the preview below doesn't dim.")
-    PlacementRows(c.aodPlace, keepOwn = false) { v -> vm.updateCover { it.copy(aodPlace = v) } }
+    // The look's preview straight under the picker, so a change shows at once.
     Preview { AodContent(c, onTap = null) }
+    Cycle("brightness", c.aodBrightness, CoverPrefs.BRIGHTNESS, show = { "$it%" }) { v -> vm.updateCover { it.copy(aodBrightness = v) } }
+    Note("most phones are readable indoors at 2%. the preview doesn't dim.")
+    More("size, colour, position, timeout") {
+        Cycle("size", c.aodScale, CoverPrefs.SCALES, show = { "${(it * 100).toInt()}%" }) { v -> vm.updateCover { it.copy(aodScale = v) } }
+        Cycle("colour", c.aodColor, AodColor.entries, show = {
+            when (it) {
+                AodColor.THEME -> "theme"
+                AodColor.ACCENT -> "accent only"
+                AodColor.DIM -> "dim only"
+                AodColor.MONO -> "white"
+            }
+        }) { v -> vm.updateCover { it.copy(aodColor = v) } }
+        Toggle("burn-in shift", c.aodShift) { v -> vm.updateCover { it.copy(aodShift = v) } }
+        Cycle("go dark after", c.aodTimeoutMin, CoverPrefs.TIMEOUTS, show = { if (it == 0) "never" else "$it min" }) { v ->
+            vm.updateCover { it.copy(aodTimeoutMin = v) }
+        }
+        PlacementRows(c.aodPlace, keepOwn = false) { v -> vm.updateCover { it.copy(aodPlace = v) } }
+    }
     Note("android's screen saver can show the same look while charging: settings › display › screen saver › droidtty.")
     Link("open screen saver settings", "›") {
         SystemActions.open(context, Intent(Settings.ACTION_DREAM_SETTINGS))
@@ -290,36 +293,38 @@ private fun LockSection(vm: LauncherViewModel, c: CoverPrefs, host: Boolean) {
             detail = { presetNote(it, c.lockScreen == LockScreenMode.OWN) },
         ) { v -> vm.updateCover { it.copy(lockPreset = v) } }
         Note(presetNote(c.lockPreset, c.lockScreen == LockScreenMode.OWN))
+        Link("replay preview", "›") { replay++ }
+        key(replay, c.lockPreset) {
+            Preview { LockContent(c.lockPreset, c.lockPlace, onUnlock = {}, onAction = {}) }
+        }
         Toggle("double tap skips the animation", c.skipOnDoubleTap) { v -> vm.updateCover { it.copy(skipOnDoubleTap = v) } }
         Note(
             if (c.skipOnDoubleTap) "a double tap jumps to the end of the boot, ready to unlock. single taps during it still do nothing."
             else "the boot always plays in full before a tap does anything.",
         )
-        PlacementRows(c.lockPlace, keepOwn = true) { v -> vm.updateCover { it.copy(lockPlace = v) } }
-        if (c.lockScreen == LockScreenMode.OWN) {
-            Cycle("keypad", c.keypad, KeypadLayout.entries, show = {
-                when (it) {
-                    KeypadLayout.FULL -> "full width"
-                    KeypadLayout.LEFT -> "left hand"
-                    KeypadLayout.CENTER -> "narrow, centred"
-                    KeypadLayout.RIGHT -> "right hand"
-                }
-            }) { v -> vm.updateCover { it.copy(keypad = v) } }
-            Toggle("shuffle digits", c.shuffleKeypad) { v -> vm.updateCover { it.copy(shuffleKeypad = v) } }
-            Note(
-                if (c.shuffleKeypad) "a new digit order every time: smudges and someone watching learn less, but you have to look for each key."
-                else "the usual phone layout, 1 to 9 with 0 at the bottom: faster, and your thumb learns it.",
-            )
-            Stepper(
-                "keypad height",
-                if (c.keypadLift == 0) "bottom" else "+${c.keypadLift}dp",
-                onMinus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift - CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
-                onPlus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift + CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
-            )
-        }
-        Link("replay preview", "›") { replay++ }
-        key(replay, c.lockPreset) {
-            Preview { LockContent(c.lockPreset, c.lockPlace, onUnlock = {}, onAction = {}) }
+        More(if (c.lockScreen == LockScreenMode.OWN) "position and keypad" else "position") {
+            PlacementRows(c.lockPlace, keepOwn = true) { v -> vm.updateCover { it.copy(lockPlace = v) } }
+            if (c.lockScreen == LockScreenMode.OWN) {
+                Cycle("keypad", c.keypad, KeypadLayout.entries, show = {
+                    when (it) {
+                        KeypadLayout.FULL -> "full width"
+                        KeypadLayout.LEFT -> "left hand"
+                        KeypadLayout.CENTER -> "narrow, centred"
+                        KeypadLayout.RIGHT -> "right hand"
+                    }
+                }) { v -> vm.updateCover { it.copy(keypad = v) } }
+                Toggle("shuffle digits", c.shuffleKeypad) { v -> vm.updateCover { it.copy(shuffleKeypad = v) } }
+                Note(
+                    if (c.shuffleKeypad) "a new digit order every time: smudges and someone watching learn less, but you have to look for each key."
+                    else "the usual phone layout, 1 to 9 with 0 at the bottom: faster, and your thumb learns it.",
+                )
+                Stepper(
+                    "keypad height",
+                    if (c.keypadLift == 0) "bottom" else "+${c.keypadLift}dp",
+                    onMinus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift - CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
+                    onPlus = { vm.updateCover { it.copy(keypadLift = (it.keypadLift + CoverPrefs.STEP_LIFT).coerceIn(CoverPrefs.RANGE_LIFT)) } },
+                )
+            }
         }
     }
 
@@ -502,3 +507,11 @@ private fun canNotify(context: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
+
+/** Settings most people never touch, folded under one row until asked for. */
+@Composable
+private fun More(what: String, content: @Composable () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    SettingRow(if (open) "less" else "more: $what", if (open) "▴" else "▾") { open = !open }
+    if (open) content()
+}
