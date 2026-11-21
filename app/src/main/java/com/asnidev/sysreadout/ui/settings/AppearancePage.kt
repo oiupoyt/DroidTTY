@@ -45,8 +45,10 @@ fun AppearancePage(vm: LauncherViewModel, open: (Page) -> Unit) {
     var editing by remember { mutableStateOf<ThemeColor?>(null) }
     var saving by remember { mutableStateOf(false) }
 
-    Section("presets")
-    Note("tap to apply. your own presets: long-press to delete.")
+    SetupList(vm)
+
+    Section("themes")
+    Note("colours and fonts only. tap to apply. your own: long-press to delete.")
     Presets.builtIn.forEach { preset -> PresetRow(preset, current = preset.theme == theme) { vm.updateTheme { preset.theme } } }
     userPresets.forEach { preset ->
         PresetRow(preset, current = preset.theme == theme, onLongClick = { vm.deletePreset(preset.name) }) {

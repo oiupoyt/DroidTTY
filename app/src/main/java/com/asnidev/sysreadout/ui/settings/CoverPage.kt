@@ -1,6 +1,7 @@
 package com.asnidev.sysreadout.ui.settings
 
 import android.Manifest
+import com.asnidev.sysreadout.system.Grants
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -157,9 +158,9 @@ fun CoverPage(vm: LauncherViewModel, open: (Page) -> Unit = {}) {
             "with it on there's no permanent notification; without it, the always-on display and boot screen fall " +
             "back to \"display over other apps\" and a background service that android requires to show a notification.",
     )
-    SettingRow("lock service", if (host) "on" else "turn on ›") { if (!host) SystemActions.openAccessibilitySettings(context) }
+    SettingRow("lock service", if (host) "on" else "turn on ›") { if (!host) Grants.lockService(context) }
     if (!host) {
-        SettingRow("display over other apps", if (overlay) "on" else "grant ›") { if (!overlay) openOverlaySettings(context) }
+        SettingRow("display over other apps", if (overlay) "on" else "grant ›") { if (!overlay) Grants.overlay(context) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             SettingRow("notification", if (notify) "on" else "allow ›") {
                 if (!notify) askNotify.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -501,7 +502,3 @@ private fun canNotify(context: Context): Boolean =
     Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-private fun openOverlaySettings(context: Context) {
-    val direct = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-    if (!SystemActions.open(context, direct)) SystemActions.open(context, Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
-}

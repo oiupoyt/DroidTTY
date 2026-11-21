@@ -1,6 +1,7 @@
 package com.asnidev.sysreadout.shade
 
 import android.app.ActivityOptions
+import com.asnidev.sysreadout.system.Grants
 import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.ComponentName
@@ -233,7 +234,7 @@ fun ShadeContent(
                                     Text(
                                         "| [grant]",
                                         style = styled.log,
-                                        modifier = Modifier.clickable { open(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }.padding(vertical = 8.dp),
+                                        modifier = Modifier.clickable { run { Grants.notificationAccess(context); if (prefs.shadeCloseOnOpen) close() } }.padding(vertical = 8.dp),
                                     )
                                 }
                                 groups.isEmpty() -> Text("| no notifications", style = styled.log, color = dim)

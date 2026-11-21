@@ -1,6 +1,7 @@
 package com.asnidev.sysreadout.ui.settings
 
 import android.app.Activity
+import com.asnidev.sysreadout.system.Grants
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -73,11 +74,11 @@ fun LogPage(vm: LauncherViewModel, open: (Page) -> Unit) {
             }
             needs == Access.NOTIFICATIONS && !NotifLog.connected -> {
                 vm.toggleRow(probe.id)
-                SystemActions.openNotificationAccess(context)
+                Grants.notificationAccess(context)
             }
             needs == Access.USAGE && !vm.engine.usage.hasAccess() -> {
                 vm.toggleRow(probe.id)
-                vm.engine.usage.openSettings()
+                Grants.usageAccess(context)
             }
             needs == Access.SHIZUKU && !monitor.shizuku -> {
                 vm.toggleRow(probe.id)
@@ -180,8 +181,8 @@ private fun MonitorSection(vm: LauncherViewModel, open: (Page) -> Unit) {
 
     Section("system monitor")
     Note("tables and events from what android lets droidtty see. app activity needs usage access; the notification log needs notification access.")
-    Link("usage access", if (usageAccess) "granted" else "grant ›") { vm.engine.usage.openSettings() }
-    Link("notification access", if (notifAccess) "granted" else "grant ›") { SystemActions.openNotificationAccess(context) }
+    Link("usage access", if (usageAccess) "granted" else "grant ›") { Grants.usageAccess(context) }
+    Link("notification access", if (notifAccess) "granted" else "grant ›") { Grants.notificationAccess(context) }
     Link("shizuku", (if (m.shizuku) shizuku.label else "off · optional") + " ›") { open(Page.Shizuku) }
     Cycle("monitor refresh", m.intervalSec, MonitorPrefs.INTERVALS, show = { "${it}s" }) { v -> set { it.copy(intervalSec = v) } }
 

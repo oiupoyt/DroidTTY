@@ -1,6 +1,13 @@
 package com.asnidev.sysreadout.ui.settings
 
+import com.asnidev.sysreadout.monitor.NotifLog
+import com.asnidev.sysreadout.cover.CoverHost
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.compose.runtime.mutableIntStateOf
+import android.os.PowerManager
+import android.content.Context
 import android.os.Build
+import com.asnidev.sysreadout.system.Grants
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -59,10 +66,11 @@ sealed interface Page {
     data object Shizuku : Page { override val title = "shizuku" }
     data object Cover : Page { override val title = "screen" }
     data object Shade : Page { override val title = "notification shade" }
+    data object Start : Page { override val title = "get started" }
 
     companion object {
         /** Top-level pages by name, for `--es page <name>`. */
-        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku, Cover, Shade)
+        fun byName(name: String): Page? = listOf(Log, Appearance, About, Crt, Shizuku, Cover, Shade, Start)
             .firstOrNull { it.title.substringBefore(' ') == name.lowercase() }
     }
 }
@@ -98,6 +106,7 @@ fun SettingsScreen(vm: LauncherViewModel) {
                     Page.Shizuku -> ShizukuPage(vm)
                     Page.Cover -> CoverPage(vm, open)
                     Page.Shade -> ShadePage(vm)
+                    Page.Start -> StartPage(vm, open)
                 }
             }
         }
@@ -139,16 +148,21 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
         Link("resume", "switch everything back on ›") { vm.leaveSafeMode() }
     }
 
-    if (!SystemActions.isDefaultLauncher(context)) {
-        Section("launcher")
-        Link("set as default home app") { SystemActions.openHomeSettings(context) }
+    // New here: one place with every switch to turn on and the ready-made setups.
+    var resumed by remember { mutableIntStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        resumed++
+        onPauseOrDispose {}
     }
+    val missing = remember(resumed) { startMissing(context, vm) }
+    Section("start here")
+    Link("get started", if (missing == 0) "all set ›" else "$missing to turn on ›") { open(Page.Start) }
 
     Section("screens")
-    Link("appearance", "fonts · colours · presets ›") { open(Page.Appearance) }
+    Link("appearance", "setups · fonts · colours ›") { open(Page.Appearance) }
+    Link("always-on, lock screen, shade", coverSummary(cover) + " ›") { open(Page.Cover) }
     Link("log", "${prefs.logRows.size} rows ›") { open(Page.Log) }
     Link("shizuku", (if (monitor.shizuku) shizuku.label else "off · optional") + " ›") { open(Page.Shizuku) }
-    Link("screen", coverSummary(cover) + " ›") { open(Page.Cover) }
 
     Section("home")
     Toggle("clock", prefs.showClock) { v -> vm.update { it.copy(showClock = v) } }
@@ -173,7 +187,7 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         Toggle("double-tap to lock", prefs.doubleTapLock) { v ->
             vm.update { it.copy(doubleTapLock = v) }
-            if (v && !LockService.isRunning) SystemActions.openAccessibilitySettings(context)
+            if (v && !LockService.isRunning) Grants.lockService(context)
         }
     } else {
         Note("double-tap to lock needs Android 9 or newer.")
@@ -273,3 +287,12 @@ private fun StatusClockRow(vm: LauncherViewModel) {
         }
     }
 }
+
+/** How many of get started's switches are still off. */
+private fun startMissing(context: Context, vm: LauncherViewModel): Int = listOf(
+    SystemActions.isDefaultLauncher(context),
+    CoverHost.available,
+    NotifLog.connected,
+    vm.engine.usage.hasAccess(),
+    context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName),
+).count { !it }

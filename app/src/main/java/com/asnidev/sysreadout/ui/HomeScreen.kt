@@ -1,6 +1,7 @@
 package com.asnidev.sysreadout.ui
 
 import android.text.format.DateFormat
+import com.asnidev.sysreadout.system.Grants
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -48,6 +49,7 @@ import com.asnidev.sysreadout.data.HAlign
 import com.asnidev.sysreadout.data.StyleElement
 import com.asnidev.sysreadout.data.VAlign
 import com.asnidev.sysreadout.system.LockService
+import com.asnidev.sysreadout.ui.settings.Page
 import com.asnidev.sysreadout.system.SystemActions
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
@@ -101,7 +103,7 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
                     onDoubleTap = {
                         if (currentPrefs.doubleTapLock && !LockService.lock()) {
                             Toast.makeText(context, "enable the lock service in accessibility settings", Toast.LENGTH_SHORT).show()
-                            SystemActions.openAccessibilitySettings(context)
+                            Grants.lockService(context)
                         }
                     },
                 )
@@ -173,6 +175,19 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
                             color = styled.ink(prefs.entryStyle, ink),
                             modifier = Modifier
                                 .backing(prefs.entryStyle, haze, styled, ink)
+                                .padding(horizontal = EntryPadH, vertical = EntryPadV),
+                        )
+                        // A fresh install: one tap to the page that walks through setup.
+                        Text(
+                            styled.text(StyleElement.DATE, "new here? tap to get started"),
+                            style = styled.date,
+                            color = styled.ink(prefs.entryStyle, styled.accent),
+                            modifier = Modifier
+                                .backing(prefs.entryStyle, haze, styled, styled.accent)
+                                .clickable {
+                                    vm.requestedPage = Page.Start
+                                    vm.screen = Screen.SETTINGS
+                                }
                                 .padding(horizontal = EntryPadH, vertical = EntryPadV),
                         )
                     }
