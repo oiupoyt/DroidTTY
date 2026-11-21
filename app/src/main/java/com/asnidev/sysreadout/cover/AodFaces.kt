@@ -7,7 +7,19 @@ import kotlin.random.Random
 /** The always-on display's looks. Kept sparse: most pixels stay black. */
 object AodFaces {
 
-    fun frame(look: AodLook, d: CoverData, tick: Long = 0L): CoverFrame = when (look) {
+    /**
+     * [tick] is wall-clock ms on the phone. The animations want a small running time:
+     * noise and Int conversions break on 1.8e12 ms (the fire went solid), so they get the
+     * time within an hour. Life keeps the real minute; it reads [CoverData.now].
+     */
+    fun frame(look: AodLook, d: CoverData, tick: Long = 0L): CoverFrame = frameAt(look, d, animTime(tick))
+
+    /** Wall clock folded to the time within the hour: small enough for every animation's maths. */
+    fun animTime(tick: Long): Long = Math.floorMod(tick, ANIM_PERIOD_MS)
+
+    private const val ANIM_PERIOD_MS = 60 * 60_000L
+
+    private fun frameAt(look: AodLook, d: CoverData, tick: Long): CoverFrame = when (look) {
         AodLook.CLOCK -> clock(d)
         AodLook.STATUS -> status(d)
         AodLook.PROMPT -> prompt(d)

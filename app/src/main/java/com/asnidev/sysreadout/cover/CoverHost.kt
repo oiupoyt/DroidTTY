@@ -129,9 +129,16 @@ class CoverHost(private val service: AccessibilityService) {
     private val events = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> screenOff()
-                Intent.ACTION_SCREEN_ON -> screenOn()
+                Intent.ACTION_SCREEN_OFF -> {
+                    shadeDetector.lockEvent(SystemClock.elapsedRealtime())
+                    screenOff()
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    shadeDetector.lockEvent(SystemClock.elapsedRealtime())
+                    screenOn()
+                }
                 Intent.ACTION_USER_PRESENT -> {
+                    shadeDetector.lockEvent(SystemClock.elapsedRealtime())
                     CoverState.suppressed = false
                     CoverState.lastUnlock = System.currentTimeMillis()
                     if (mode == Mode.COVER) hideScreen()
@@ -402,22 +409,30 @@ class CoverHost(private val service: AccessibilityService) {
      * right after [systemShadeOnPurpose], and on the lock screen.
      */
     private fun takeOverShade() {
-        if (!prefs.shade || mode != null || keyguard.isKeyguardLocked) return
+        if (!prefs.shade || !prefs.shadeTakeover || mode != null || keyguard.isKeyguardLocked) return
         if (SystemClock.elapsedRealtime() < systemShadeAllowedUntil) return
-        collapseSystemShade()
-        // One pull sends several window events; the first one does the swap.
         if (shade.isShown || takeoverPending) return
         takeoverPending = true
+        // Only a shade that stays open is replaced: unlock animations show the same window briefly.
         main.postDelayed({
             takeoverPending = false
-            openShade()
-        }, TAKEOVER_DELAY_MS)
+            if (!shadeProbe() || keyguard.isKeyguardLocked || mode != null) return@postDelayed
+            collapseSystemShade()
+            main.postDelayed({ openShade() }, TAKEOVER_DELAY_MS)
+        }, ShadeDetector.CONFIRM_MS)
     }
 
     private var takeoverPending = false
 
     /** From the window list: Android's shade is down (or just went up). */
+    private val shadeDetector = ShadeDetector()
+
+    /** Asks the lock service whether Android's shade is down right now. */
+    var shadeProbe: () -> Boolean = { false }
+
     fun windowsChanged(systemShadeOpen: Boolean) {
+        val unlocked = !keyguard.isKeyguardLocked && !ownLocked
+        val pulled = shadeDetector.opened(systemShadeOpen, unlocked, SystemClock.elapsedRealtime())
         if (!systemShadeOpen) return
         if (ownLocked) {
             // Android's shade can't open over SysReadout's own screen; this only fires when it isn't up.
@@ -427,7 +442,7 @@ class CoverHost(private val service: AccessibilityService) {
             }
             return
         }
-        takeOverShade()
+        if (pulled) takeOverShade()
     }
 
     private fun collapseSystemShade() {

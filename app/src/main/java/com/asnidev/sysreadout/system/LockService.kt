@@ -21,7 +21,10 @@ class LockService : AccessibilityService() {
 
     override fun onServiceConnected() {
         instance = WeakReference(this)
-        host = CoverHost(this).also { it.start() }
+        host = CoverHost(this).also {
+            it.shadeProbe = ::systemShadeOpen
+            it.start()
+        }
     }
 
     override fun onUnbind(intent: Intent?): Boolean {

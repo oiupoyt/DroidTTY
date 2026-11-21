@@ -111,6 +111,8 @@ data class CoverPrefs(
     val shadeCloseOnOpen: Boolean = true,
     /** Start the shade below the camera hole (display cutout), so no text sits behind it. */
     val shadeBelowCutout: Boolean = true,
+    /** When Android's own shade opens anyway, close it and open DroidTTY's instead. */
+    val shadeTakeover: Boolean = true,
 ) {
     /** The foreground service hears screen on/off for these; the own lock and shade use the accessibility service. */
     val needsService: Boolean get() = aodMode != AodMode.OFF || lockScreen == LockScreenMode.COVER
@@ -131,6 +133,7 @@ data class CoverPrefs(
         .put("shadeRows", JSONArray(shadeRows))
         .put("shadeCloseOnOpen", shadeCloseOnOpen)
         .put("shadeBelowCutout", shadeBelowCutout)
+        .put("shadeTakeover", shadeTakeover)
         .toString()
 
     companion object {
@@ -179,6 +182,7 @@ data class CoverPrefs(
                 shadeRows = strings(o, "shadeRows")?.distinct() ?: d.shadeRows,
                 shadeCloseOnOpen = o.optBoolean("shadeCloseOnOpen", d.shadeCloseOnOpen),
                 shadeBelowCutout = o.optBoolean("shadeBelowCutout", d.shadeBelowCutout),
+                shadeTakeover = o.optBoolean("shadeTakeover", d.shadeTakeover),
             )
         }
 

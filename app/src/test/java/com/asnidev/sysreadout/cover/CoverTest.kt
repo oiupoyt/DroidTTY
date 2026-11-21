@@ -564,3 +564,75 @@ class ArtGridTest {
         assertEquals(off, CoverPrefs.fromJson(off.toJson()))
     }
 }
+
+class RealClockTest {
+    private val d = CoverData(now = ZonedDateTime.of(2026, 11, 21, 7, 40, 0, 0, ZoneOffset.UTC), is24h = true)
+    /** What System.currentTimeMillis() gives on a phone: the tests used small times and missed this. */
+    private val wall = 1_795_000_000_000L
+
+    @Test
+    fun fireIsFlamesNotASolidBlockAtRealTimes() {
+        val art = AodFaces.frame(AodLook.FIRE, d, wall).lines.filter { it.role == Role.ART }.joinToString("") { it.text }
+        // Flames thin out upward: the grid mixes empty and dense cells instead of one character everywhere.
+        assertTrue("fire shows no variety", art.toSet().size >= 5)
+        assertTrue("fire has no empty air", art.count { it == ' ' } > art.length / 10)
+    }
+
+    @Test
+    fun everyAnimatedLookStillMovesAtRealTimes() {
+        AodLook.entries.filter { it.animated }.forEach { look ->
+            val step = AodFaces.refreshMs(look)
+            val a = AodFaces.frame(look, d, wall)
+            val b = AodFaces.frame(look, d, wall + 3 * step)
+            assertFalse("$look frozen at real time", a == b)
+        }
+    }
+
+    @Test
+    fun animationTimeFoldsIntoAnHour() {
+        assertEquals(0L, AodFaces.animTime(0))
+        assertTrue(AodFaces.animTime(wall) in 0 until 3_600_000L)
+        assertTrue(AodFaces.animTime(-5) in 0 until 3_600_000L)
+    }
+}
+
+class ShadeDetectorTest {
+
+    @Test
+    fun aPullWhileUnlockedCounts() {
+        val d = ShadeDetector()
+        assertFalse(d.opened(open = false, unlocked = true, now = 10_000))
+        assertTrue(d.opened(open = true, unlocked = true, now = 10_100))
+    }
+
+    @Test
+    fun onlyTheChangeCountsNotEveryEventWhileOpen() {
+        val d = ShadeDetector()
+        assertTrue(d.opened(true, true, 10_000))
+        assertFalse(d.opened(true, true, 10_050))
+        assertFalse(d.opened(true, true, 10_100))
+    }
+
+    @Test
+    fun fingerprintUnlockDoesntCount() {
+        // Locked: the keyguard (same window as the shade) is up. Unlocking flips the lock first,
+        // and the window list still shows it for a moment.
+        val d = ShadeDetector()
+        assertFalse(d.opened(open = true, unlocked = false, now = 20_000))
+        d.lockEvent(20_100) // USER_PRESENT
+        assertFalse(d.opened(open = true, unlocked = true, now = 20_150))
+        assertFalse(d.opened(open = false, unlocked = true, now = 20_400))
+        // Even if the window flickers back during the unlock animation.
+        assertFalse(d.opened(open = true, unlocked = true, now = 20_600))
+        assertFalse(d.opened(open = false, unlocked = true, now = 20_700))
+        // A real pull later is still caught.
+        assertTrue(d.opened(open = true, unlocked = true, now = 25_000))
+    }
+
+    @Test
+    fun takeoverCanBeSwitchedOff() {
+        assertTrue(CoverPrefs().shadeTakeover)
+        val off = CoverPrefs(shadeTakeover = false)
+        assertEquals(off, CoverPrefs.fromJson(off.toJson()))
+    }
+}

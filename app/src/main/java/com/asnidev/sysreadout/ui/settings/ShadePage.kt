@@ -41,6 +41,11 @@ fun ShadePage(vm: LauncherViewModel) {
     }
     Toggle("close after opening something", c.shadeCloseOnOpen) { v -> set { it.copy(shadeCloseOnOpen = v) } }
     Note(if (c.shadeCloseOnOpen) "opening a notification or a settings panel closes the shade." else "the shade stays open behind what you opened.")
+    Toggle("replace android's shade", c.shadeTakeover) { v -> set { it.copy(shadeTakeover = v) } }
+    Note(
+        if (c.shadeTakeover) "when android's own shade opens anyway (its swipe sometimes wins), droidtty closes it and opens its own."
+        else "only the status-bar strip and a swipe down on home open droidtty's shade; android's opens as usual.",
+    )
     Toggle("start below the camera hole", c.shadeBelowCutout) { v -> set { it.copy(shadeBelowCutout = v) } }
     Note(
         if (c.shadeBelowCutout) "the shade starts under the front camera's cutout, so no text sits behind it."
