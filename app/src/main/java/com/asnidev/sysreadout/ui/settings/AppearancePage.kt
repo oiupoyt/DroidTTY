@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.asnidev.sysreadout.LauncherViewModel
 import com.asnidev.sysreadout.data.Preset
 import com.asnidev.sysreadout.data.Presets
+import com.asnidev.sysreadout.data.matches
 import com.asnidev.sysreadout.data.StyleElement
 import com.asnidev.sysreadout.data.Theme
 import com.asnidev.sysreadout.ui.Fonts
@@ -45,11 +47,15 @@ fun AppearancePage(vm: LauncherViewModel, open: (Page) -> Unit) {
     var editing by remember { mutableStateOf<ThemeColor?>(null) }
     var saving by remember { mutableStateOf(false) }
 
-    SetupList(vm)
-
-    Section("themes")
-    Note("colours and fonts only. tap to apply. your own: long-press to delete.")
-    Presets.builtIn.forEach { preset -> PresetRow(preset, current = preset.theme == theme) { vm.updateTheme { preset.theme } } }
+    val cover by vm.cover.collectAsState()
+    Section("presets")
+    Note(
+        "tap to apply. each built-in preset also picks an always-on look and lock screen to match " +
+            "(it doesn't switch either on). your own presets keep colours and fonts only; long-press to delete.",
+    )
+    Presets.builtIn.forEach { preset ->
+        PresetRow(preset, current = preset.theme == theme && preset.screen.matches(cover)) { vm.applyPreset(preset) }
+    }
     userPresets.forEach { preset ->
         PresetRow(preset, current = preset.theme == theme, onLongClick = { vm.deletePreset(preset.name) }) {
             vm.updateTheme { preset.theme }
@@ -118,13 +124,23 @@ private fun PresetRow(preset: Preset, current: Boolean, onLongClick: (() -> Unit
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(if (current) "* " else "  ", style = Type.row, color = Palette.log)
-        Box(Modifier.weight(1f).background(Color(t.background)).padding(horizontal = 10.dp, vertical = 6.dp)) {
+        Column(Modifier.weight(1f).background(Color(t.background)).padding(horizontal = 10.dp, vertical = 6.dp)) {
             Text(
                 t.prefix.replace("{n}", "1") + t.menu.case.apply(preset.name),
                 style = sample,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            // What else it sets, in the preset's own log colour.
+            preset.screen?.let { s ->
+                Text(
+                    "aod ${s.aodLook.title()} · lock ${s.lockPreset.title()}",
+                    style = Type.small,
+                    color = Color(t.log.color),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Box(Modifier.width(8.dp))
         Swatch(t.accent, 14)

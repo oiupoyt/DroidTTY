@@ -345,6 +345,12 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         scope.launch { store.updateTheme(transform) }
     }
 
+    /** The theme, plus the always-on look and lock preset a built-in preset comes with. */
+    fun applyPreset(p: Preset) {
+        updateTheme { p.theme }
+        p.screen?.let { s -> updateCover { it.copy(aodLook = s.aodLook, lockPreset = s.lockPreset, aodColor = s.aodColor) } }
+    }
+
     fun savePreset(name: String) {
         val preset = Preset(name.trim(), theme.value)
         scope.launch { store.updatePresets { list -> list.filter { it.name != preset.name } + preset } }

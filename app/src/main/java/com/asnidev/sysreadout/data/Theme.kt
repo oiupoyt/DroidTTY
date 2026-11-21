@@ -164,7 +164,19 @@ data class Theme(
     }
 }
 
-data class Preset(val name: String, val theme: Theme)
+/**
+ * The always-on look and lock preset that go with a built-in theme, applied with it.
+ * Applying never switches the always-on display or a lock screen on: those keep
+ * their own switches, so a preset only changes how they look.
+ */
+data class PresetScreen(val aodLook: AodLook, val lockPreset: LockPreset, val aodColor: AodColor = AodColor.THEME)
+
+/** True when the always-on look and lock preset are this screen's (no screen: always). */
+fun PresetScreen?.matches(c: CoverPrefs): Boolean =
+    this == null || (c.aodLook == aodLook && c.lockPreset == lockPreset && c.aodColor == aodColor)
+
+/** [screen] is null for the user's own presets, which save colours and fonts only. */
+data class Preset(val name: String, val theme: Theme, val screen: PresetScreen? = null)
 
 fun List<Preset>.toJson(): String =
     JSONArray().apply { forEach { put(JSONObject().put("name", it.name).put("theme", it.theme.toJson())) } }.toString()
@@ -191,6 +203,7 @@ object Presets {
             drawer = spec("system-mono", 20f, 0xFFE8ECE9),
             log = spec("system-mono", 11f, 0xFF3DDC84),
         ),
+        screen = PresetScreen(AodLook.CLOCK, LockPreset.BOOTLINE),
     )
 
     /** P1 green phosphor, the classic monochrome terminal, with the full CRT treatment. */
@@ -207,6 +220,7 @@ object Presets {
             prefix = "> ",
             crt = Crt(glow = 0.6f, scanlines = 0.45f, curvature = 0.35f, vignette = 0.6f, fringe = 0.2f, menuToo = true),
         ),
+        screen = PresetScreen(AodLook.NEOFETCH, LockPreset.ARCH),
     )
 
     val amber = Preset(
@@ -222,6 +236,7 @@ object Presets {
             prefix = "C:\\> ",
             crt = Crt(glow = 0.5f, scanlines = 0.5f, curvature = 0.25f, vignette = 0.5f, menuToo = true),
         ),
+        screen = PresetScreen(AodLook.PONG, LockPreset.DOS),
     )
 
     val paper = Preset(
@@ -235,6 +250,7 @@ object Presets {
             log = spec("ibm-plex-mono", 10.5f, 0xFF8FA3C8),
             crt = Crt(glow = 0.25f, scanlines = 0.2f, vignette = 0.3f),
         ),
+        screen = PresetScreen(AodLook.HTOP, LockPreset.SSH),
     )
 
     val minimal = Preset(
@@ -247,6 +263,7 @@ object Presets {
             drawer = spec("jetbrains-mono", 20f, 0xFFFFFFFF, TextCase.LOWER),
             log = spec("jetbrains-mono", 10f, 0xFF4A4A4A),
         ),
+        screen = PresetScreen(AodLook.CLOCK, LockPreset.LOGIN, AodColor.DIM),
     )
 
     val arcade = Preset(
@@ -260,6 +277,7 @@ object Presets {
             log = spec("silkscreen", 11f, 0xFF7A5CFF),
             prefix = "{n} ",
         ),
+        screen = PresetScreen(AodLook.PLASMA, LockPreset.C64),
     )
 
     val lime = Preset(
@@ -273,9 +291,75 @@ object Presets {
             log = spec("space-mono", 10f, 0xFF5E6B48),
             prefix = "./",
         ),
+        screen = PresetScreen(AodLook.AQUARIUM, LockPreset.GRUB),
     )
 
-    val builtIn = listOf(default, greenP1, amber, paper, minimal, arcade, lime)
+    /** Doom fire in the dark: deep red phosphor, warm and low. */
+    val ember = Preset(
+        "ember",
+        Theme(
+            background = 0xFF0C0302, accent = 0xFFFF5A1F, backing = 0xFF180604,
+            clock = spec("vt323", 84f, 0xFFFF7A3D),
+            date = spec("vt323", 24f, 0xFFB8452A, TextCase.UPPER, spacing = 0.05f),
+            menu = spec("vt323", 30f, 0xFFFF8F5A, TextCase.UPPER, spacing = 0.04f),
+            drawer = spec("vt323", 28f, 0xFFFF8F5A, TextCase.UPPER),
+            log = spec("vt323", 15f, 0xFFD9542B),
+            banner = spec("vt323", 19f, 0xFFFF7A3D, TextCase.UPPER),
+            prefix = "~ ",
+            crt = Crt(glow = 0.55f, scanlines = 0.35f, vignette = 0.6f, menuToo = true),
+        ),
+        screen = PresetScreen(AodLook.FIRE, LockPreset.BIOS),
+    )
+
+    /** Deep space: ice blue on near black, a starfield always-on. */
+    val deepSpace = Preset(
+        "deep space",
+        Theme(
+            background = 0xFF03060E, accent = 0xFF7FD3FF, backing = 0xFF070D1C,
+            clock = spec("share-tech-mono", 58f, 0xFFCDEBFF),
+            date = spec("share-tech-mono", 15f, 0xFF5E7A99, TextCase.LOWER),
+            menu = spec("share-tech-mono", 21f, 0xFFCDEBFF, TextCase.LOWER),
+            drawer = spec("share-tech-mono", 20f, 0xFFCDEBFF, TextCase.LOWER),
+            log = spec("share-tech-mono", 11f, 0xFF4F87B8),
+            prefix = "· ",
+            crt = Crt(glow = 0.3f, vignette = 0.45f),
+        ),
+        screen = PresetScreen(AodLook.STARFIELD, LockPreset.WAKEUP),
+    )
+
+    /** The matrix: bright green on black, katakana rain always-on. */
+    val matrix = Preset(
+        "matrix",
+        Theme(
+            background = 0xFF000000, accent = 0xFF00FF41, backing = 0xFF001A08,
+            clock = spec("jetbrains-mono", 50f, 0xFF00FF41, bold = true),
+            date = spec("jetbrains-mono", 14f, 0xFF008F11, TextCase.LOWER),
+            menu = spec("jetbrains-mono", 20f, 0xFF00FF41, TextCase.LOWER),
+            drawer = spec("jetbrains-mono", 19f, 0xFF00FF41, TextCase.LOWER),
+            log = spec("jetbrains-mono", 10f, 0xFF00B82E),
+            prefix = "$ ",
+            crt = Crt(glow = 0.45f, scanlines = 0.2f),
+        ),
+        screen = PresetScreen(AodLook.MATRIX, LockPreset.WAKEUP),
+    )
+
+    /** An oscilloscope bench: cyan trace on dark teal, the scope always-on. */
+    val scope = Preset(
+        "scope",
+        Theme(
+            background = 0xFF021012, accent = 0xFF3FF5E8, backing = 0xFF04191C,
+            clock = spec("ibm-plex-mono", 52f, 0xFF7DFFF5),
+            date = spec("ibm-plex-mono", 14f, 0xFF2E8C88, TextCase.UPPER, spacing = 0.08f),
+            menu = spec("ibm-plex-mono", 20f, 0xFF7DFFF5),
+            drawer = spec("ibm-plex-mono", 19f, 0xFF7DFFF5),
+            log = spec("ibm-plex-mono", 10.5f, 0xFF2BC4BA),
+            prefix = "[{n}] ",
+            crt = Crt(glow = 0.5f, scanlines = 0.3f, curvature = 0.2f, vignette = 0.4f),
+        ),
+        screen = PresetScreen(AodLook.SCOPE, LockPreset.BOOTLINE),
+    )
+
+    val builtIn = listOf(default, greenP1, amber, paper, minimal, arcade, lime, ember, deepSpace, matrix, scope)
 
     /** Choices offered for the menu-entry prefix. */
     val prefixes = listOf("", "> ", "$ ", "./", "- ", "• ", "~/", "C:\\> ", "[{n}] ", "{n}. ", "{n} ")
