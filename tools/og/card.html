@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- The link-preview card (1200x630). Rendered to site/assets/og.png by tools/og/render.py. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family: "VT323"; src: url("../../site/assets/fonts/vt323_regular.ttf"); }
+@font-face { font-family: "JB"; src: url("../../site/assets/fonts/jetbrainsmono_regular.ttf"); }
+* { margin: 0; box-sizing: border-box; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { background: #020e05; color: #b9f5cf; font-family: "JB", monospace; position: relative; }
+/* Scanlines and vignette over everything, like the app's crt effects. */
+body::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 40% 50%, transparent 55%, rgba(0,0,0,0.6) 100%);
+}
+.copy { position: absolute; left: 72px; top: 64px; width: 640px; }
+.prompt { font-size: 24px; color: #5fae80; }
+.prompt b { color: #1aff80; font-weight: 400; }
+h1 {
+  font-family: "VT323", monospace; font-weight: 400; color: #1aff80; font-size: 132px; line-height: 0.9;
+  margin-top: 26px; text-shadow: 0 0 22px rgba(26,255,128,0.55), 0 0 4px rgba(26,255,128,0.8);
+}
+.tag { font-family: "VT323", monospace; font-size: 46px; color: #b9f5cf; line-height: 1.05; margin-top: 14px; }
+.list { margin-top: 30px; font-size: 21px; line-height: 1.75; color: #8fd9ac; }
+.list span { color: #1aff80; }
+.url { position: absolute; left: 72px; bottom: 56px; font-size: 24px; color: #1aff80; }
+.url::before { content: "> "; }
+/* The phone: the real home screenshot, tilted in 3D. */
+.stage { position: absolute; right: 90px; top: 0; width: 360px; height: 630px; perspective: 1400px; }
+.phone {
+  position: absolute; left: 70px; top: 40px; width: 246px; height: 545px;
+  background: #0a0a0a; border: 1px solid #2a2a2a; padding: 8px;
+  transform: rotateX(8deg) rotateY(-22deg) rotateZ(2deg);
+  box-shadow: 0 40px 90px -20px rgba(0,0,0,0.9), 0 0 60px rgba(26,255,128,0.18);
+}
+.phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <p class="prompt"><b>user@phone:~$</b> droidtty --help</p>
+    <h1>DroidTTY</h1>
+    <p class="tag">your android phone,<br>as a terminal.</p>
+    <p class="list"><span>*</span> live system readout launcher<br><span>*</span> animated ascii always-on display<br><span>*</span> lock screens that boot like a pc</p>
+  </div>
+  <p class="url">droidtty.oiupoyt.space</p>
+  <div class="stage"><div class="phone"><img src="home-green.png" alt=""></div></div>
+</body>
+</html>
