@@ -1,0 +1,12 @@
+{
+  "name": "droidtty",
+  "compatibility_date": "2024-09-23",
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+  "routes": [
+    { "pattern": "droidtty.oiupoyt.space", "custom_domain": true }
+  ]
+}

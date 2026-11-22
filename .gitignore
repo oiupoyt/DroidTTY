@@ -18,3 +18,5 @@ keystore.properties
 
 # --- Claude Code (local tooling, not part of the app) ---
 .claude/
+
+.wrangler/
