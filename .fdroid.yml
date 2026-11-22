@@ -26,6 +26,14 @@ Builds:
     versionCode: 19
     # The tag rather than a hash: this file is part of the tagged commit.
     commit: v0.5.6
+    subdir: app
+    gradle:
+      - yes
+
+  - versionName: 0.5.7
+    versionCode: 20
+    # The tag rather than a hash: this file is part of the tagged commit.
+    commit: v0.5.7
     # The Gradle root is the repo root; F-Droid looks for the output APK under
     # <subdir>/build/outputs/apk, so this must be the app module itself.
     subdir: app
@@ -38,5 +46,5 @@ AllowedAPKSigningKeys: 39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58
 AutoUpdateMode: Version
 # Only vX.Y.Z tags are releases; `latest` is CI's rolling pre-release build.
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.5.6
-CurrentVersionCode: 19
+CurrentVersion: 0.5.7
+CurrentVersionCode: 20
