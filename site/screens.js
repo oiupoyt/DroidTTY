@@ -16,45 +16,9 @@
     return '<div class="status"><span>' + hhmm(now()) + "</span><span>▲ ▮▮▮ 76%</span></div>";
   }
 
-  // The readout behind home: the app's own row format, sample values.
-  const LOG = [
-    "DROIDTTY INDUSTRIES OPERATING SYSTEM",
-    "COPYRIGHT 2026 DROIDTTY INC.",
-    "      - PACMAN -",
-    "",
-    "up    2d05h17m  awake 31%",
-    "os    Android 16 · API 36",
-    "cpu   8 cores  0.60-2.85 GHz",
-    "mem   3.1G / 7.5G avail",
-    "bat   76%  discharging  31°C",
-    "net   wifi  ↓1.2M/s ↑48K/s",
-    "── procs · by cpu ──────────",
-    "  PID  CPU  RES  NAME",
-    " 1287 12.4 412M system_server",
-    " 3311  6.1 238M Firefox",
-    " 2204  3.0 154M Signal",
-    "── connections ─────────────",
-    "Firefox   142.250.183.4:443",
-    "Signal    76.223.92.165:443",
-    "────────────────────────────",
-    "21:31 net   cell → wifi",
-    "21:35 fg    Firefox",
-    "21:38 ntf   Signal",
-  ];
-
+  // Home is a real screenshot (white CRT preset), recoloured to the site's theme by an SVG filter.
   function home() {
-    const d = now();
-    const apps = ["PHONE", "MESSAGES", "FIREFOX", "CAMERA", "SIGNAL", "MAPS"];
-    return (
-      status() +
-      '<div class="s-home">' +
-      '<pre class="s-log">' + LOG.map(esc).join("\n") + "</pre>" +
-      '<div class="s-front">' +
-      '<div class="s-clock">' + hhmm(d) + "</div>" +
-      '<div class="s-date">' + dateLine(d).toUpperCase() + "</div>" +
-      '<ul class="s-apps">' + apps.map((a) => "<li>&gt; " + a + "</li>").join("") + "</ul>" +
-      "</div></div>"
-    );
+    return '<img class="s-shot" src="assets/shots/home-screen.webp" alt="DroidTTY home screen on a phone: the live readout with the clock and three pinned apps" width="720" height="1595">';
   }
 
   const ALL_APPS = ["Calculator", "Calendar", "Camera", "Chrome", "Clock", "Contacts", "Files", "Firefox", "Gallery", "Gmail", "Maps", "Messages", "Music", "Phone", "Settings", "Signal", "Spotify", "Termux", "Weather", "YouTube"];
@@ -191,8 +155,6 @@
       framesReady.then(next);
     } else if (name === "home") {
       el.innerHTML = home();
-      const t = setInterval(() => { el.innerHTML = home(); }, 30000);
-      stops.push(() => clearInterval(t));
     } else if (name === "drawer") {
       // Types a search by itself, the way the drawer narrows as you type.
       const words = ["", "f", "fi", "fir", "", "s", "si", "sig"];

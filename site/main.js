@@ -11,21 +11,26 @@
   // The filter's tables run 0..1 in 16 steps; each maps that brightness onto the theme.
   const RENDER_BG = 0.04;
   const RENDER_FG = 0.78;
+  // The home screenshot is white on black: black stays background, white becomes the text colour.
+  const SHOT_BG = 0.0;
+  const SHOT_FG = 0.9;
   function retint() {
     const cs = getComputedStyle(document.body);
     const rgb = (v) => { const h = cs.getPropertyValue(v).trim().replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); };
     const bg = rgb("--scr-bg");
     const fg = rgb("--scr-fg");
     const steps = 16;
-    ["r", "g", "b"].forEach((ch, c) => {
+    const fill = (id, lo, hi) => ["r", "g", "b"].forEach((ch, c) => {
       const table = [];
       for (let i = 0; i <= steps; i++) {
-        const t = Math.min(1, Math.max(0, (i / steps - RENDER_BG) / (RENDER_FG - RENDER_BG)));
+        const t = Math.min(1, Math.max(0, (i / steps - lo) / (hi - lo)));
         table.push((bg[c] + (fg[c] - bg[c]) * t).toFixed(4));
       }
-      const fn = document.getElementById("retint-" + ch);
+      const fn = document.getElementById(id + "-" + ch);
       if (fn) fn.setAttribute("tableValues", table.join(" "));
     });
+    fill("retint", RENDER_BG, RENDER_FG);
+    fill("retint-shot", SHOT_BG, SHOT_FG);
     document.querySelectorAll(".grid li button, .lightbox").forEach((el) => { el.style.background = cs.getPropertyValue("--scr-bg"); });
   }
 
@@ -102,7 +107,7 @@
 
   // ---- screen tabs: the stage phone turns around to the chosen screen ----
   const NOTES = {
-    home: "home: pinned apps as text, in front of the readout. swipe up for the drawer, down for the shade.",
+    home: "home: a real screenshot, recoloured to the colour you picked. pinned apps as text in front of the live readout; swipe up for the drawer, down for the shade.",
     drawer: "app drawer: type and it narrows by prefix, initials or any part of the name; a single match opens by itself.",
     aod: "always-on display: playing the app's own frames. it cycles through a few of the 19 looks.",
     boot: "boot: what plays when the screen turns on while locked. these are the app's real boot frames.",

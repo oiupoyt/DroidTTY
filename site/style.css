@@ -400,3 +400,8 @@ section {
 /* Screenshots show the app's real presets in their own colours: no recolouring. */
 .grid li.real img, .lightbox img.real { filter: none; }
 .grid li.real img { aspect-ratio: 1080 / 2392; object-fit: cover; }
+
+/* The real home screenshot fills the glass; the theme colours it. It already carries the
+   app's own crt effects, so the site's scanlines and vignette stay off it. */
+.screen.scr-home::after { display: none; }
+.s-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; filter: url(#retint-shot); }
