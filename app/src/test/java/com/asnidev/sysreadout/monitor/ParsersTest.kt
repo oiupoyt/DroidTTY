@@ -11,14 +11,14 @@ class ParsersTest {
     @Test
     fun top() {
         val out = """
-            10609 10195 30.7 156M com.sysreadout.app
+            10609 10195 30.7 156M space.oiupoyt.droidtty
               764 10167 11.5 173M com.android.systemui
               404  1000  7.6  19M surfaceflinger
             10804     0  0.0    0 [kworker/u8:1-events_unbound]
         """.trimIndent()
         val procs = Parsers.top(out)
         assertEquals(4, procs.size)
-        assertEquals(Proc(10609, 10195, 30.7f, 156L shl 20, "com.sysreadout.app"), procs[0])
+        assertEquals(Proc(10609, 10195, 30.7f, 156L shl 20, "space.oiupoyt.droidtty"), procs[0])
         assertEquals(19L shl 20, procs[2].resBytes)
         assertEquals("[kworker/u8:1-events_unbound]", procs[3].name)
         assertTrue(procs[0].isApp)

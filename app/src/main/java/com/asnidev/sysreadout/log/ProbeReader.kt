@@ -241,7 +241,7 @@ class ProbeReader(private val context: Context) {
         } + " GHz"
     }
 
-    /** What's playing, from the media sessions notification access lets SysReadout see. */
+    /** What's playing, from the media sessions notification access lets DroidTTY see. */
     private fun media(): String {
         val msm = context.getSystemService(MediaSessionManager::class.java) ?: return "n/a"
         val sessions = msm.getActiveSessions(ComponentName(context, NotifListener::class.java))

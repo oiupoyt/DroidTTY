@@ -44,7 +44,7 @@ class ShizukuStateTest {
 
 class ShizukuSetupTest {
 
-    private val lock = "com.sysreadout.app/com.asnidev.sysreadout.system.LockService"
+    private val lock = "space.oiupoyt.droidtty/com.asnidev.sysreadout.system.LockService"
 
     @Test
     fun addsToAnEmptyList() {

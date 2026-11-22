@@ -12,7 +12,7 @@ interface RemoteProc {
 }
 
 /**
- * Shell commands run by Shizuku's server process instead of SysReadout's helper.
+ * Shell commands run by Shizuku's server process instead of DroidTTY's helper.
  * Some Android 16 ROMs can't start Shizuku "user services" at all (app_process
  * dies in LoadedApk.makeApplication), while the server itself works fine.
  *
@@ -50,7 +50,7 @@ class RemoteShell(private val start: (Array<String>) -> RemoteProc?) {
 
     companion object {
         /** Printed only after a successful cat, so a failed read can't pass for file contents. */
-        internal const val EOF = "__sysreadout_eof__"
+        internal const val EOF = "__droidtty_eof__"
 
         internal fun quote(s: String) = "'" + s.replace("'", "'\\''") + "'"
     }
@@ -76,9 +76,9 @@ object ShizukuRoute {
 }
 
 /**
- * The helper's interface served by [RemoteShell] inside SysReadout's own process,
+ * The helper's interface served by [RemoteShell] inside DroidTTY's own process,
  * so the bridge calls it like the real helper. Reverse DNS isn't offered: the
- * lookups would run under SysReadout's network permission, which only the DNS
+ * lookups would run under DroidTTY's network permission, which only the DNS
  * monitor uses.
  */
 class DirectShellService(private val shell: RemoteShell) : IShellService.Stub() {

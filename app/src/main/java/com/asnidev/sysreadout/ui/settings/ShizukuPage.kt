@@ -38,7 +38,7 @@ private val FEATURES = listOf(
  * Everything about Shizuku in one place: what it adds, a live checklist from
  * "installed" to "connected" with a button for each step, how to start it
  * without a computer and keep it running after a reboot, and the one-tap
- * setup of SysReadout's other access once it's connected.
+ * setup of DroidTTY's other access once it's connected.
  */
 @Composable
 fun ShizukuPage(vm: LauncherViewModel) {
@@ -81,7 +81,7 @@ fun ShizukuPage(vm: LauncherViewModel) {
         vm.shizuku.restartHelper()
     }
     when {
-        state == ShizukuState.UNSUPPORTED -> Note("this shizuku is too old for sysreadout: update it.")
+        state == ShizukuState.UNSUPPORTED -> Note("this shizuku is too old for droidtty: update it.")
         state == ShizukuState.FAILING ->
             Note("shizuku's helper kept failing, so droidtty left it alone for a while. it retries by itself.")
         state == ShizukuState.NO_PERMISSION ->

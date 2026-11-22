@@ -37,7 +37,12 @@ h1 {
   box-shadow: 0 40px 90px -20px rgba(0,0,0,0.9), 0 0 60px rgba(26,255,128,0.18);
 }
 .phone img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+/* ?feature: the 1024x500 F-Droid feature graphic, scaled down from the same layout. */
+html.feature, html.feature body { width: 1024px; height: 500px; }
+html.feature body { zoom: 0.794; height: 630px; width: 1290px; }
+html.feature .stage { right: 150px; }
 </style>
+<script>if (location.search === "?feature") document.documentElement.className = "feature";</script>
 </head>
 <body>
   <div class="copy">

@@ -158,7 +158,7 @@ class ScreenService : Service() {
             // where that is ignored for launches from the background.
             @Suppress("DEPRECATION")
             getSystemService(PowerManager::class.java)
-                .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "sysreadout:aod-start")
+                .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "droidtty:aod-start")
                 .acquire(3_000L)
             CoverActivity.start(this, CoverActivity.MODE_AOD)
         }

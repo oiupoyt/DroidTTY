@@ -72,7 +72,7 @@ class CoverHost(private val service: AccessibilityService) {
     private var prefs by mutableStateOf(CoverPrefs())
     private var theme by mutableStateOf(Presets.default.theme)
 
-    /** Locked by SysReadout's own lock: set at screen off, cleared by the right PIN. */
+    /** Locked by DroidTTY's own lock: set at screen off, cleared by the right PIN. */
     @Volatile var ownLocked = false
         private set
 
@@ -293,7 +293,7 @@ class CoverHost(private val service: AccessibilityService) {
         @Suppress("DEPRECATION")
         wake = power.newWakeLock(
             PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
-            "sysreadout:aod",
+            "droidtty:aod",
         ).apply { runCatching { acquire(AOD_WAKE_LOCK_MS) } }
         mode = Mode.AOD
         screen.show(
@@ -394,7 +394,7 @@ class CoverHost(private val service: AccessibilityService) {
         when (ScreenPolicy.guard(ownLocked, screen.isShown, pkg == SYSTEM_UI, call)) {
             ScreenPolicy.Guard.IGNORE -> return
             ScreenPolicy.Guard.COLLAPSE_SHADE -> collapseSystemShade()
-            // An app came up behind the lock; going home puts SysReadout's own home screen there.
+            // An app came up behind the lock; going home puts DroidTTY's own home screen there.
             ScreenPolicy.Guard.SEND_HOME -> service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
         }
         relock()
@@ -408,7 +408,7 @@ class CoverHost(private val service: AccessibilityService) {
 
     /**
      * Android's shade opened (its own swipe from the top beat the strip): with
-     * SysReadout's shade on, close Android's and open ours in its place. Skipped
+     * DroidTTY's shade on, close Android's and open ours in its place. Skipped
      * right after [systemShadeOnPurpose], and on the lock screen.
      */
     private fun takeOverShade() {
@@ -438,7 +438,7 @@ class CoverHost(private val service: AccessibilityService) {
         val pulled = shadeDetector.opened(systemShadeOpen, unlocked, SystemClock.elapsedRealtime())
         if (!systemShadeOpen) return
         if (ownLocked) {
-            // Android's shade can't open over SysReadout's own screen; this only fires when it isn't up.
+            // Android's shade can't open over DroidTTY's own screen; this only fires when it isn't up.
             if (ScreenPolicy.guard(ownLocked, screen.isShown, fromSystemUi = true, inCall = false) == ScreenPolicy.Guard.COLLAPSE_SHADE) {
                 collapseSystemShade()
                 relock()
@@ -564,7 +564,7 @@ class CoverHost(private val service: AccessibilityService) {
         @Volatile var active: CoverHost? = null
             private set
 
-        /** Can SysReadout's own lock and shade run: the lock service is on. */
+        /** Can DroidTTY's own lock and shade run: the lock service is on. */
         val available: Boolean get() = active != null
 
         fun canDrawOverlays(context: Context) = available || Settings.canDrawOverlays(context)

@@ -46,7 +46,7 @@ import java.security.SecureRandom
 import kotlin.math.roundToInt
 
 /**
- * SysReadout's own lock: the preset plays, then asks for the PIN in its own
+ * DroidTTY's own lock: the preset plays, then asks for the PIN in its own
  * voice on a shuffled terminal keypad. Wrong PINs shake the screen, buzz, and
  * count toward an escalating wait that survives restarts.
  */

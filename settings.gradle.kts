@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SysReadout"
+rootProject.name = "DroidTTY"
 include(":app")

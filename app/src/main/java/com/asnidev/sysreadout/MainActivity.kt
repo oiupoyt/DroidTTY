@@ -38,7 +38,7 @@ import com.asnidev.sysreadout.data.VAlign
 import com.asnidev.sysreadout.data.Presets
 import com.asnidev.sysreadout.ui.LocalStyled
 import com.asnidev.sysreadout.ui.crt
-import com.asnidev.sysreadout.ui.SysReadoutTheme
+import com.asnidev.sysreadout.ui.DroidTTYTheme
 import com.asnidev.sysreadout.ui.rememberStyled
 import com.asnidev.sysreadout.ui.settings.Page
 import com.asnidev.sysreadout.ui.settings.SettingsScreen
@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         preview(intent)
         handleUpdate(intent)
-        setContent { SysReadoutTheme { LauncherRoot(vm, this) } }
+        setContent { DroidTTYTheme { LauncherRoot(vm, this) } }
     }
 
     /**

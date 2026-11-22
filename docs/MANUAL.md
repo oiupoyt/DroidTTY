@@ -50,7 +50,7 @@ Hidden apps are listed under settings › hidden apps, where you can bring them 
 
 ## 4. Settings
 
-Long-press an empty part of the home screen. The header (`sysreadout --config › …`) shows where you are; tap it or press Back to go up a level.
+Long-press an empty part of the home screen. The header (`droidtty --config › …`) shows where you are; tap it or press Back to go up a level.
 
 - **screens › appearance**: presets, colours, fonts, CRT effects ([section 7](#7-appearance)).
 - **screens › log**: banner, rows, system monitor, stream ([sections 5](#5-the-log) and [6](#6-the-system-monitor)).
@@ -94,8 +94,8 @@ Free text above everything else, like a terminal's boot header. Edit it under lo
 For example:
 
 ```
-ASNIDEV INDUSTRIES OPERATING SYSTEM
-COPYRIGHT 2026-{year} ASNIDEV INC.
+KAT OS
+COPYRIGHT 2026-{year} OIUPOYT
 - {device} -
 ```
 
@@ -233,7 +233,7 @@ Needed for the `ntf` and `media` rows, the notification stream and the *notifica
 
 Settings › appearance.
 
-- **Presets**: *sysreadout* (default), *green p1* (green phosphor terminal), *amber p3* (DOS amber), *paper p4* (white phosphor), *minimal*, *arcade*, *lime*. Tap to apply. *Save current as preset…* keeps your own; long-press one of yours to delete it.
+- **Presets**: *droidtty* (default), *green p1* (green phosphor terminal), *amber p3* (DOS amber), *paper p4* (white phosphor), *minimal*, *arcade*, *lime*, *ember*, *deep space*, *matrix*, *scope*. Each also picks a matching always-on look and lock screen (it doesn't switch either on). Tap to apply. *Save current as preset…* keeps your own, with your colours, fonts, always-on look and lock screen; long-press one of yours to delete it.
 - **Colours**: background, accent (prompt, cursor), backing (the tint behind menu entries).
 - **Text**: clock, date, menu entries, drawer, log and banner each have their own font, size, bold, letter spacing, case (as-is / lower / UPPER) and colour, with a live preview.
 - **Fonts**: 11 bundled (system mono/sans, JetBrains Mono, IBM Plex Mono, Space Mono, Share Tech Mono, VT323, Px437 IBM VGA, Major Mono Display, Press Start 2P, Silkscreen) plus *import .ttf / .otf* for your own. Long-press an imported font to delete it.
@@ -279,7 +279,7 @@ Animated, about ten frames a second (they cost more battery than the still looks
 
 - **android's own**: unchanged.
 - **boot screen over android's**: each time the screen turns on while locked, a preset plays over Android's lock screen; a tap opens Android's PIN pad and fingerprint straight away, skipping its clock page. A fingerprint straight away skips the preset. *Emergency call* on the GRUB preset uncovers Android's lock screen, which has its own emergency button.
-- **sysreadout's own pin lock**: for a phone whose Android screen lock is set to *none*. At every screen off DroidTTY locks; the preset plays, then asks for your PIN in its own voice (`Password:`, `Enter Password:`, `C:\>unlock`, `PASSWORD?`…) on a terminal keypad whose digits are in a new random order every time (switch *shuffle digits* off for the usual phone layout). Each key fills in as it's pressed, typed digits show as `[*]`, a wrong PIN shakes the screen and buzzes and says how many tries are left before a wait, and the right one prints `[  OK  ] access granted`. After 5 wrong PINs each further try waits longer, from 30 seconds doubling up to 15 minutes, also across restarts.
+- **droidtty's own pin lock**: for a phone whose Android screen lock is set to *none*. At every screen off DroidTTY locks; the preset plays, then asks for your PIN in its own voice (`Password:`, `Enter Password:`, `C:\>unlock`, `PASSWORD?`…) on a terminal keypad with the usual phone layout (switch *shuffle digits* on for a new random order every time). Each key fills in as it's pressed, typed digits show as `[*]`, a wrong PIN shakes the screen and buzzes and says how many tries are left before a wait, and the right one prints `[  OK  ] access granted`. After 5 wrong PINs each further try waits longer, from 30 seconds doubling up to 15 minutes, also across restarts.
 
   While it's locked: Android's notification shade and quick settings are closed as soon as they open, an app that comes up (from recents, a notification or the home gesture) is sent home with the lock kept on top, and the back, home and recents keys do nothing. Incoming calls get through so they can be answered. It starts locked after a reboot or after the lock service restarts. There's no emergency button: there's no way to keep the dialer from reaching the rest of the phone.
 

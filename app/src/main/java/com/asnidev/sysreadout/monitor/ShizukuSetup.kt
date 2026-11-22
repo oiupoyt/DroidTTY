@@ -3,7 +3,7 @@ package com.asnidev.sysreadout.monitor
 import android.os.Build
 import com.asnidev.sysreadout.system.LockService
 
-/** Access SysReadout can switch on for itself through Shizuku's shell, only when the user asks. */
+/** Access DroidTTY can switch on for itself through Shizuku's shell, only when the user asks. */
 enum class SetupItem(val title: String, val detail: String) {
     USAGE("usage access", "screen time, traffic per app, app switches"),
     NOTIFICATIONS("notification access", "notification log and table, what's playing"),
@@ -12,7 +12,7 @@ enum class SetupItem(val title: String, val detail: String) {
 }
 
 /**
- * The shell commands behind the one-tap setup. They only switch on SysReadout's
+ * The shell commands behind the one-tap setup. They only switch on DroidTTY's
  * own access (the same switches the user would flip in Android's settings) and
  * the grants stay after Shizuku stops.
  */

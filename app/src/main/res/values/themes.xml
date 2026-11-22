@@ -1,17 +1,17 @@
 <resources>
-    <style name="Theme.SysReadout" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.DroidTTY" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowShowWallpaper">false</item>
     </style>
     <!-- Black from the first frame, so the screen doesn't flash before the cover draws. -->
-    <style name="Theme.SysReadout.Cover">
+    <style name="Theme.DroidTTY.Cover">
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
     <!-- Nothing drawn: Android's own PIN pad shows through. -->
-    <style name="Theme.SysReadout.Unlock" parent="android:Theme.Translucent.NoTitleBar">
+    <style name="Theme.DroidTTY.Unlock" parent="android:Theme.Translucent.NoTitleBar">
         <item name="android:windowAnimationStyle">@null</item>
     </style>
     <color name="bg">#FF050807</color>

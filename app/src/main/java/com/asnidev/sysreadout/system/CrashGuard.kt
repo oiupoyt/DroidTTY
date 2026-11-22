@@ -56,7 +56,7 @@ object CrashGuard {
         prefs(context).edit().putBoolean(KEY_SAFE, false).remove(KEY_EARLY).apply()
     }
 
-    /** The last crash report, or null if SysReadout hasn't crashed (or it was cleared). */
+    /** The last crash report, or null if DroidTTY hasn't crashed (or it was cleared). */
     fun report(context: Context): String? =
         runCatching { File(context.filesDir, REPORT).takeIf { it.exists() }?.readText() }.getOrNull()
 

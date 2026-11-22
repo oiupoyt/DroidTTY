@@ -30,7 +30,7 @@ enum class VAlign { TOP, CENTER, BOTTOM }
  */
 enum class LogLayout { CLASSIC, FEED }
 
-/** What SysReadout does with the lock-screen wallpaper. OFF leaves it alone. */
+/** What DroidTTY does with the lock-screen wallpaper. OFF leaves it alone. */
 enum class LockMode { OFF, IMAGE, SNAPSHOT }
 
 data class LauncherPrefs(

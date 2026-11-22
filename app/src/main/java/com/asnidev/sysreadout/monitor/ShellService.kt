@@ -6,7 +6,7 @@ import kotlin.system.exitProcess
 /**
  * Shizuku "user service": Shizuku starts this class in its own process with
  * the shell uid, which can see every process and socket. Keep it free of
- * Android app state: it has no Context and no access to SysReadout's storage.
+ * Android app state: it has no Context and no access to DroidTTY's storage.
  * The work itself is in [ShellExec].
  */
 class ShellService : IShellService.Stub() {

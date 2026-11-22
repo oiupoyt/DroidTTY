@@ -28,7 +28,7 @@ object Type {
 }
 
 @Composable
-fun SysReadoutTheme(content: @Composable () -> Unit) {
+fun DroidTTYTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme(
             primary = Palette.log,

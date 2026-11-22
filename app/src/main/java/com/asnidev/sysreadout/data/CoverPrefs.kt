@@ -3,7 +3,7 @@ package com.asnidev.sysreadout.data
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** When SysReadout's own always-on display comes up after the screen turns off. */
+/** When DroidTTY's own always-on display comes up after the screen turns off. */
 enum class AodMode { OFF, CHARGING, ALWAYS }
 
 enum class AodLook {
@@ -65,7 +65,7 @@ enum class LockPreset { ARCH, BOOTLINE, BIOS, DOS, LOGIN, GRUB, C64, PANIC, SSH,
 
 /**
  * OFF: Android's lock screen as it is. COVER: a boot screen over Android's lock,
- * which still does the unlocking. OWN: SysReadout's own PIN lock, for phones
+ * which still does the unlocking. OWN: DroidTTY's own PIN lock, for phones
  * whose Android screen lock is set to none.
  */
 enum class LockScreenMode { OFF, COVER, OWN }
@@ -80,7 +80,7 @@ data class CoverPrefs(
     val aodMinBattery: Int = 20,
     val lockScreen: LockScreenMode = LockScreenMode.OFF,
     val lockPreset: LockPreset = LockPreset.ARCH,
-    /** SysReadout's shade opens from a swipe down on the status bar and on home. */
+    /** DroidTTY's shade opens from a swipe down on the status bar and on home. */
     val shade: Boolean = false,
     /** Text size multiplier for the always-on display. */
     val aodScale: Float = 1f,

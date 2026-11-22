@@ -88,7 +88,7 @@ class ShizukuBridge(private val context: Context) {
     /** The direct-shell stand-in for [service]; set only while the helper isn't connected. */
     @Volatile private var direct: IShellService? = null
 
-    /** Connected through Shizuku's server rather than SysReadout's helper (no reverse DNS). */
+    /** Connected through Shizuku's server rather than DroidTTY's helper (no reverse DNS). */
     val isDirect: Boolean get() = service == null && direct != null
 
     /** Reverse DNS needs the helper; the direct shell doesn't offer it. */

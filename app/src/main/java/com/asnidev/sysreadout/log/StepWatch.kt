@@ -10,7 +10,7 @@ import java.time.LocalDate
 
 /**
  * Steps from the hardware step counter, which counts since boot. "Today" is
- * measured from the last count SysReadout saw before midnight.
+ * measured from the last count DroidTTY saw before midnight.
  */
 class StepWatch(private val context: Context) : SensorEventListener {
 

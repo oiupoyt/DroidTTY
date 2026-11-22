@@ -30,7 +30,7 @@ import kotlin.concurrent.thread
  * every app's lookups to a fake resolver address inside this interface; each
  * query is noted (which app, which name, which addresses came back) and
  * relayed unchanged to the network's real DNS server. All other traffic
- * bypasses it. SysReadout itself is excluded so its relaying can't loop.
+ * bypasses it. DroidTTY itself is excluded so its relaying can't loop.
  */
 class DnsVpnService : VpnService() {
 
@@ -176,7 +176,7 @@ class DnsVpnService : VpnService() {
     }
 
     /**
-     * SysReadout is excluded from its own VPN, so its default network is the real one.
+     * DroidTTY is excluded from its own VPN, so its default network is the real one.
      * Only that network's own servers: with none (offline), the lookup goes unanswered
      * as it would without the monitor, rather than to some public resolver.
      */
@@ -197,7 +197,7 @@ class DnsVpnService : VpnService() {
 
     companion object {
         private const val TAG = "DnsMonitor"
-        private const val ACTION_STOP = "com.asnidev.sysreadout.DNS_STOP"
+        private const val ACTION_STOP = "space.oiupoyt.droidtty.DNS_STOP"
         private const val MTU = 4096
         private const val VPN_ADDRESS = "10.111.222.1"
         const val DNS_ADDRESS = "10.111.222.2"
@@ -205,7 +205,7 @@ class DnsVpnService : VpnService() {
         /** Null when the user has already allowed the VPN; otherwise the consent screen to show. */
         fun consentIntent(context: Context): Intent? = prepare(context)
 
-        /** False when Android refused (e.g. SysReadout isn't in the foreground). */
+        /** False when Android refused (e.g. DroidTTY isn't in the foreground). */
         fun start(context: Context): Boolean = runCatching {
             context.startService(Intent(context, DnsVpnService::class.java)) != null
         }.onFailure { Log.w(TAG, "couldn't start the DNS monitor", it) }.getOrDefault(false)

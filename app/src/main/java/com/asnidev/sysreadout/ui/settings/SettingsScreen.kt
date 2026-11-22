@@ -243,7 +243,7 @@ private fun LockScreenSection(vm: LauncherViewModel) {
         val was = prefs.lockMode
         vm.update { it.copy(lockMode = v) }
         if (v == LockMode.SNAPSHOT) vm.updateLockSnapshot()
-        // Leaving image or snapshot: take SysReadout's picture off the lock screen again.
+        // Leaving image or snapshot: take DroidTTY's picture off the lock screen again.
         if (v == LockMode.OFF && was != LockMode.OFF) scope.launch(Dispatchers.IO) { LockScreen.clear(context) }
     }
     when (prefs.lockMode) {

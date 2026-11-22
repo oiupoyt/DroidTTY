@@ -57,7 +57,7 @@ object ScreenPolicy {
     enum class Guard { IGNORE, COLLAPSE_SHADE, SEND_HOME }
 
     /**
-     * What the own lock does when a window opens. While SysReadout's own screen (the
+     * What the own lock does when a window opens. While DroidTTY's own screen (the
      * always-on display or the lock) is on top it covers everything, so nothing needs
      * doing: reacting there is what used to swap the always-on display for the lock.
      */

@@ -22,7 +22,7 @@ import com.asnidev.sysreadout.ui.Fonts
 
 /**
  * The lock-screen wallpaper. Android lets an app set it separately from the
- * home screen (FLAG_LOCK); the home screen stays SysReadout's own drawing.
+ * home screen (FLAG_LOCK); the home screen stays DroidTTY's own drawing.
  */
 object LockScreen {
 
@@ -34,7 +34,7 @@ object LockScreen {
         } != null
     }.onFailure { Log.w(TAG, "couldn't set the lock-screen image", it) }.getOrDefault(false)
 
-    /** Removes SysReadout's lock-screen picture: the lock screen shows the home wallpaper again. */
+    /** Removes DroidTTY's lock-screen picture: the lock screen shows the home wallpaper again. */
     fun clear(context: Context): Boolean = runCatching {
         WallpaperManager.getInstance(context).clear(WallpaperManager.FLAG_LOCK)
         true

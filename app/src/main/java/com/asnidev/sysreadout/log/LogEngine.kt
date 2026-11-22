@@ -719,7 +719,7 @@ class LogEngine(
      * include the work profile's apps (uids like 1010123), and Android refuses
      * package lookups across users: asking about one threw and crashed the
      * launcher. So a uid from another user is named through the launcher's own
-     * app list, or through the same app id in SysReadout's user (an app has the
+     * app list, or through the same app id in DroidTTY's user (an app has the
      * same app id in every user), and marked [w] (or [u<n>] for another user).
      */
     private fun uidLabel(uid: Int): String = uidNames.getOrPut(uid) {

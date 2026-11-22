@@ -48,7 +48,7 @@ class NotifListener : NotificationListenerService() {
     companion object {
         @Volatile private var instance: NotifListener? = null
 
-        /** Bumped on every post and removal, so SysReadout's shade knows to re-read. */
+        /** Bumped on every post and removal, so DroidTTY's shade knows to re-read. */
         val version = MutableStateFlow(0L)
 
         private fun changed() {

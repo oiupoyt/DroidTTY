@@ -105,7 +105,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope + CoroutineExceptionHandler { _, e -> Log.w(TAG, "background task failed", e) }
 
     /**
-     * Set by [CrashGuard] after SysReadout crashed repeatedly right after starting:
+     * Set by [CrashGuard] after DroidTTY crashed repeatedly right after starting:
      * a plain launcher with the default look, and no log, Shizuku or DNS monitor.
      */
     val safeMode = MutableStateFlow(CrashGuard.isSafeMode(app))
@@ -391,6 +391,6 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private companion object {
-        const val TAG = "SysReadout"
+        const val TAG = "DroidTTY"
     }
 }

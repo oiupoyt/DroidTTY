@@ -65,7 +65,7 @@ private class Script(private val centered: Boolean = false, private val tail: Bo
  * the phone didn't give is left out, never invented. Counters that animate (boot
  * seconds, the memory count, the flash bar) are the animation's own progress.
  *
- * With [own] (SysReadout's own lock), a preset ends ready for a password instead
+ * With [own] (DroidTTY's own lock), a preset ends ready for a password instead
  * of a "tap" hint; [prompt] supplies the password line in the preset's voice.
  */
 object LockPresets {

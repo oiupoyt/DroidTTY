@@ -49,7 +49,7 @@ class RemoteShellTest {
 
     @Test
     fun anUnreadableFileIsNullNotEmpty() {
-        assertNull(shell.readFile("/nonexistent/sysreadout", 5_000))
+        assertNull(shell.readFile("/nonexistent/droidtty", 5_000))
     }
 
     @Test

@@ -129,7 +129,7 @@ class OverlayWindow(
             }
         }
 
-        /** A transparent strip along the top edge that catches the swipe down for SysReadout's shade. */
+        /** A transparent strip along the top edge that catches the swipe down for DroidTTY's shade. */
         fun topStrip(heightPx: Int): WindowManager.LayoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             heightPx,

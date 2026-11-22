@@ -79,7 +79,7 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
     val onSwipe: (Swipe) -> Unit = { dir ->
         when (dir) {
             Swipe.UP -> vm.screen = Screen.DRAWER
-            // SysReadout's own shade when it's on and the lock service can draw it.
+            // DroidTTY's own shade when it's on and the lock service can draw it.
             Swipe.DOWN -> {
                 val opened = vm.cover.value.shade && CoverHost.active?.openShade() == true
                 if (!opened) {
