@@ -158,6 +158,19 @@ mem   3.1G / 7.5G available</pre>
   <p><a href="https://github.com/oiupoyt/DroidTTY">github</a> · <a href="https://git.oiupoyt.space/oiupoyt/DroidTTY">forgejo</a> · <a href="https://github.com/oiupoyt/DroidTTY/blob/main/docs/MANUAL.md">manual</a> · <a href="https://github.com/oiupoyt/DroidTTY/issues">issues</a></p>
 </footer>
 
+<!-- Recolours the gallery's green renders to the chosen theme: brightness picks a point
+     between the theme's background and text colour. main.js sets the tables. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="retint" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/>
+    <feComponentTransfer>
+      <feFuncR id="retint-r" type="table" tableValues="0.0078 0.1"/>
+      <feFuncG id="retint-g" type="table" tableValues="0.0549 1"/>
+      <feFuncB id="retint-b" type="table" tableValues="0.0196 0.5"/>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
 <dialog class="lightbox" id="lightbox" aria-label="gallery image">
   <form method="dialog"><button class="close" aria-label="close">[x]</button></form>
   <img id="lightbox-img" alt="">

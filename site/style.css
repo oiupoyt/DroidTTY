@@ -48,6 +48,33 @@
   --dim: #55534a; --accent: #1d1d1b; --on-accent: #e8e6dc; --glow: transparent;
 }
 
+/* What the phones show: each site theme's matching app preset. */
+:root, [data-theme="green"] {
+  --scr-bg: #020e05; --scr-fg: #1aff80; --scr-dim: #12b85c; --scr-log: #16d96c; --scr-text: #b9f5cf;
+  --scr-fg-rgb: 26, 255, 128; --scr-bg-rgb: 2, 14, 5; --scr-surface-rgb: 3, 26, 9;
+  --scr-glow: rgba(26, 255, 128, 0.5);
+}
+[data-theme="amber"] {
+  --scr-bg: #0e0800; --scr-fg: #ffb000; --scr-dim: #c48a1c; --scr-log: #e09a00; --scr-text: #ffe2a8;
+  --scr-fg-rgb: 255, 176, 0; --scr-bg-rgb: 14, 8, 0; --scr-surface-rgb: 26, 16, 0;
+  --scr-glow: rgba(255, 176, 0, 0.5);
+}
+[data-theme="ember"] {
+  --scr-bg: #0c0302; --scr-fg: #ff7a3d; --scr-dim: #b8452a; --scr-log: #d9542b; --scr-text: #ffd3bd;
+  --scr-fg-rgb: 255, 122, 61; --scr-bg-rgb: 12, 3, 2; --scr-surface-rgb: 24, 6, 4;
+  --scr-glow: rgba(255, 122, 61, 0.5);
+}
+[data-theme="space"] {
+  --scr-bg: #03060e; --scr-fg: #7fd3ff; --scr-dim: #5e7a99; --scr-log: #4f87b8; --scr-text: #cdebff;
+  --scr-fg-rgb: 127, 211, 255; --scr-bg-rgb: 3, 6, 14; --scr-surface-rgb: 7, 13, 28;
+  --scr-glow: rgba(127, 211, 255, 0.5);
+}
+[data-theme="paper"] {
+  --scr-bg: #e8e6dc; --scr-fg: #1d1d1b; --scr-dim: #55534a; --scr-log: #3a3934; --scr-text: #1d1d1b;
+  --scr-fg-rgb: 29, 29, 27; --scr-bg-rgb: 232, 230, 220; --scr-surface-rgb: 220, 217, 204;
+  --scr-glow: rgba(29, 29, 27, 0);
+}
+
 *, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; }
 
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
@@ -159,9 +186,9 @@ section {
 
 .screen {
   position: relative; width: 100%; height: 100%; overflow: hidden;
-  background: var(--scr-bg, #020e05); color: var(--scr-fg, #1aff80);
+  background: var(--scr-bg); color: var(--scr-fg);
   font-family: "VT323", monospace; font-size: 15px; line-height: 1.12;
-  text-shadow: 0 0 6px var(--scr-glow, rgba(26, 255, 128, 0.5));
+  text-shadow: 0 0 6px var(--scr-glow);
 }
 /* Scanlines and a vignette, as the app's crt effects draw them. */
 .screen::after {
@@ -169,6 +196,10 @@ section {
   background:
     repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px),
     radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+/* On the light paper theme a dark vignette greys the whole screen; keep only faint lines. */
+[data-theme="paper"] .screen::after {
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px);
 }
 .screen .cam { position: absolute; top: 8px; left: 50%; width: 10px; height: 10px; margin-left: -5px; background: #000; border: 1px solid #222; border-radius: 50% !important; z-index: 2; }
 .status { display: flex; justify-content: space-between; padding: 6px 14px 4px; font-size: 13px; opacity: 0.85; }
@@ -268,16 +299,16 @@ section {
 }
 
 /* ---- what's on the phones: the app's green p1 layout ---- */
-.screen .s-dim { color: #12b85c; opacity: 0.8; }
+.screen .s-dim { color: var(--scr-dim); opacity: 0.8; }
 .s-cur { animation: blink 1.06s steps(1) infinite; }
 .s-home { position: absolute; inset: 26px 0 0; }
-.s-log { position: absolute; inset: 0; margin: 0; padding: 8px 10px; font: inherit; font-size: 11.5px; line-height: 1.18; color: #16d96c; opacity: 0.32; text-shadow: none; white-space: pre; overflow: hidden; }
-.s-front { position: absolute; left: 0; right: 0; top: 42%; padding: 10px 14px 0; background: linear-gradient(to bottom, transparent, rgba(2,14,5,0.85) 24px); bottom: 0; }
-.s-clock, .s-date { background: linear-gradient(rgba(2,14,5,0.75), rgba(2,14,5,0.75)); width: max-content; padding: 0 4px; }
+.s-log { position: absolute; inset: 0; margin: 0; padding: 8px 10px; font: inherit; font-size: 11.5px; line-height: 1.18; color: var(--scr-log); opacity: 0.32; text-shadow: none; white-space: pre; overflow: hidden; }
+.s-front { position: absolute; left: 0; right: 0; top: 42%; padding: 10px 14px 0; background: linear-gradient(to bottom, transparent, rgba(var(--scr-bg-rgb),0.85) 24px); bottom: 0; }
+.s-clock, .s-date { background: linear-gradient(rgba(var(--scr-bg-rgb),0.75), rgba(var(--scr-bg-rgb),0.75)); width: max-content; padding: 0 4px; }
 .s-clock { font-size: 64px; line-height: 0.9; }
-.s-date { font-size: 18px; color: #12b85c; letter-spacing: 0.05em; margin-bottom: 10px; }
+.s-date { font-size: 18px; color: var(--scr-dim); letter-spacing: 0.05em; margin-bottom: 10px; }
 .s-apps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.s-apps li { font-size: 22px; letter-spacing: 0.04em; background: rgba(3, 26, 9, 0.86); width: max-content; padding: 0 8px; border: 1px solid rgba(26, 255, 128, 0.25); }
+.s-apps li { font-size: 22px; letter-spacing: 0.04em; background: rgba(var(--scr-surface-rgb), 0.86); width: max-content; padding: 0 8px; border: 1px solid rgba(var(--scr-fg-rgb), 0.25); }
 
 .s-drawer { padding: 12px 16px; }
 .s-search { font-size: 22px; margin-bottom: 10px; }
@@ -286,9 +317,9 @@ section {
 
 .s-settings { padding: 8px 14px; font-size: 15px; }
 .s-head { font-size: 21px; }
-.s-sec { margin: 10px 0 2px; color: #1aff80; }
-.s-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; color: #b9f5cf; }
-.s-row b { font-weight: 400; color: #1aff80; }
+.s-sec { margin: 10px 0 2px; color: var(--scr-fg); }
+.s-row { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; color: var(--scr-text); }
+.s-row b { font-weight: 400; color: var(--scr-fg); }
 .s-preset { padding: 3px 6px; margin: 2px 0; font-size: 17px; background: #020e05; color: #1aff80; }
 .s-preset i { display: block; font-style: normal; font-size: 12px; opacity: 0.7; }
 .s-preset.amber { background: #0e0800; color: #ffb000; }
@@ -297,10 +328,10 @@ section {
 
 .s-lock { position: absolute; inset: 26px 0 0; display: flex; flex-direction: column; padding: 10px 14px 18px; }
 .s-boot { flex: 1; margin: 0; font: inherit; font-size: 16px; white-space: pre-wrap; align-content: end; display: grid; }
-.s-pin { color: #12b85c; margin: 8px 0; }
+.s-pin { color: var(--scr-dim); margin: 8px 0; }
 .s-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.s-key { font: inherit; font-size: 17px; color: #1aff80; background: none; border: 1px solid rgba(26, 255, 128, 0.55); min-height: 40px; cursor: pointer; text-shadow: inherit; }
-.s-key:active { background: #1aff80; color: #020e05; }
+.s-key { font: inherit; font-size: 17px; color: var(--scr-fg); background: none; border: 1px solid rgba(var(--scr-fg-rgb), 0.55); min-height: 40px; cursor: pointer; text-shadow: inherit; }
+.s-key:active { background: var(--scr-fg); color: var(--scr-bg); }
 
 .s-frame { position: absolute; inset: 0; padding: 26px 8px 14px; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; }
 .s-frame.centered { justify-content: center; }
@@ -309,7 +340,11 @@ section {
 .fl { white-space: pre; min-height: 1em; }
 .fl.c { text-align: center; }
 .fl.big { font-size: 64px; line-height: 0.95; }
-.fl.dim, .fl.art { color: #12b85c; }
-.fl.inv { background: #1aff80; color: #020e05; width: max-content; text-shadow: none; }
-.fl .mk { color: #1aff80; }
+.fl.dim, .fl.art { color: var(--scr-dim); }
+.fl.inv { background: var(--scr-fg); color: var(--scr-bg); width: max-content; text-shadow: none; }
+.fl .mk { color: var(--scr-fg); }
 .s-loading { padding: 40px 14px; }
+
+/* Gallery images are drawn in green p1; an SVG filter maps their brightness onto the
+   chosen theme's background and text colours (main.js keeps it in step). */
+.grid img, .lightbox img { filter: url(#retint); }

@@ -7,13 +7,37 @@
 
   // ---- colour presets: the app's own, remembered ----
   const themeButtons = document.querySelectorAll("[data-set-theme]");
+  // Gallery renders: background near brightness 0.04, brightest text near 0.78 (measured).
+  // The filter's tables run 0..1 in 16 steps; each maps that brightness onto the theme.
+  const RENDER_BG = 0.04;
+  const RENDER_FG = 0.78;
+  function retint() {
+    const cs = getComputedStyle(document.body);
+    const rgb = (v) => { const h = cs.getPropertyValue(v).trim().replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); };
+    const bg = rgb("--scr-bg");
+    const fg = rgb("--scr-fg");
+    const steps = 16;
+    ["r", "g", "b"].forEach((ch, c) => {
+      const table = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = Math.min(1, Math.max(0, (i / steps - RENDER_BG) / (RENDER_FG - RENDER_BG)));
+        table.push((bg[c] + (fg[c] - bg[c]) * t).toFixed(4));
+      }
+      const fn = document.getElementById("retint-" + ch);
+      if (fn) fn.setAttribute("tableValues", table.join(" "));
+    });
+    document.querySelectorAll(".grid li button, .lightbox").forEach((el) => { el.style.background = cs.getPropertyValue("--scr-bg"); });
+  }
+
   function setTheme(t) {
     document.body.dataset.theme = t;
+    retint();
     themeButtons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.setTheme === t)));
     try { localStorage.setItem("droidtty-theme", t); } catch (e) { /* private mode: not remembered */ }
   }
   themeButtons.forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.setTheme)));
   try { const saved = localStorage.getItem("droidtty-theme"); if (saved) setTheme(saved); } catch (e) { /* default stays */ }
+  retint();
 
   // ---- phones ----
   const phones = Array.from(document.querySelectorAll(".phone"));
@@ -122,6 +146,7 @@
     '<li data-kind="' + it.kind + '"><button type="button" data-i="' + i + '" aria-label="' + it.title + ', ' + it.tag + ', open larger">' +
     '<img src="' + it.still + '" alt="' + it.title + ' (' + it.tag + ')" loading="lazy" width="360" height="760"></button>' +
     '<div class="cap"><b>' + it.title + "</b><span>" + it.tag + "</span></div></li>").join("");
+  retint();
   const box = document.getElementById("lightbox");
   const boxImg = document.getElementById("lightbox-img");
   const boxCap = document.getElementById("lightbox-cap");
