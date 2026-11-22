@@ -398,11 +398,13 @@ class ShuffleToggleTest {
     }
 
     @Test
-    fun shuffleIsOnByDefaultAndRoundTrips() {
-        assertTrue(CoverPrefs().shuffleKeypad)
-        val off = CoverPrefs(shuffleKeypad = false)
-        assertEquals(off, CoverPrefs.fromJson(off.toJson()))
-        assertTrue("older settings keep shuffling", CoverPrefs.fromJson("{}").shuffleKeypad)
+    fun shuffleIsOffByDefaultAndRoundTrips() {
+        assertFalse(CoverPrefs().shuffleKeypad)
+        val on = CoverPrefs(shuffleKeypad = true)
+        assertEquals(on, CoverPrefs.fromJson(on.toJson()))
+        // A choice already saved stays; only settings without one take the new default.
+        assertTrue(CoverPrefs.fromJson("""{"shuffleKeypad":true}""").shuffleKeypad)
+        assertFalse(CoverPrefs.fromJson("{}").shuffleKeypad)
     }
 }
 
@@ -634,5 +636,31 @@ class ShadeDetectorTest {
         assertTrue(CoverPrefs().shadeTakeover)
         val off = CoverPrefs(shadeTakeover = false)
         assertEquals(off, CoverPrefs.fromJson(off.toJson()))
+    }
+}
+
+class AodOwnWakeTest {
+
+    @Test
+    fun aLateScreenOnFromTheAodIsStillItsOwn() {
+        // Slow phones send the always-on display's own screen-on after more than 3 s.
+        assertTrue(ScreenPolicy.aodOwnWake(awaitingWake = true, sinceLaunchMs = 4_500))
+        assertTrue(ScreenPolicy.aodOwnWake(awaitingWake = true, sinceLaunchMs = 50))
+    }
+
+    @Test
+    fun onlyTheFirstScreenOnAfterLaunchCounts() {
+        // After the first one is consumed, the next screen-on is the power key.
+        assertFalse(ScreenPolicy.aodOwnWake(awaitingWake = false, sinceLaunchMs = 1_000))
+    }
+
+    @Test
+    fun aDisplayThatNeverLitDoesntSwallowTheUsersWake() {
+        assertFalse(ScreenPolicy.aodOwnWake(awaitingWake = true, sinceLaunchMs = ScreenPolicy.AOD_WAKE_MAX_MS))
+    }
+
+    @Test
+    fun digitsAreInOrderByDefault() {
+        assertFalse(CoverPrefs().shuffleKeypad)
     }
 }

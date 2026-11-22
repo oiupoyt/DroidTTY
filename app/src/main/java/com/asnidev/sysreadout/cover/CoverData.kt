@@ -98,6 +98,9 @@ object CoverState {
     /** When the service last started the always-on display (its own screen-on must not raise the cover). */
     @Volatile var aodLaunchedAt = 0L
 
+    /** The always-on display was started and its own screen-on hasn't arrived yet. */
+    @Volatile var awaitingAodWake = false
+
     /** The user switched the screen off on purpose: no always-on display until the next wake. */
     @Volatile var suppressed = false
 

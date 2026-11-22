@@ -51,14 +51,14 @@ fun AppearancePage(vm: LauncherViewModel, open: (Page) -> Unit) {
     Section("presets")
     Note(
         "tap to apply. each built-in preset also picks an always-on look and lock screen to match " +
-            "(it doesn't switch either on). your own presets keep colours and fonts only; long-press to delete.",
+            "(it doesn't switch either on). saving keeps your colours, fonts, always-on look and lock screen; long-press yours to delete.",
     )
     Presets.builtIn.forEach { preset ->
         PresetRow(preset, current = preset.theme == theme && preset.screen.matches(cover)) { vm.applyPreset(preset) }
     }
     userPresets.forEach { preset ->
-        PresetRow(preset, current = preset.theme == theme, onLongClick = { vm.deletePreset(preset.name) }) {
-            vm.updateTheme { preset.theme }
+        PresetRow(preset, current = preset.theme == theme && preset.screen.matches(cover), onLongClick = { vm.deletePreset(preset.name) }) {
+            vm.applyPreset(preset)
         }
     }
     Link("save current as preset…", "+") { saving = true }
@@ -69,6 +69,7 @@ fun AppearancePage(vm: LauncherViewModel, open: (Page) -> Unit) {
     Section("colours")
     ColorRow("background", theme.background) { editing = ThemeColor.BACKGROUND }
     ColorRow("accent", theme.accent) { editing = ThemeColor.ACCENT }
+    Note("changing the accent recolours every text to match: clock, apps and banner in it, the log and date in softer shades.")
     ColorRow("backing", theme.backing) { editing = ThemeColor.BACKING }
     Note("backing tints the frosted / highlight box behind home-screen text.")
 
@@ -96,7 +97,7 @@ fun AppearancePage(vm: LauncherViewModel, open: (Page) -> Unit) {
             vm.updateTheme {
                 when (which) {
                     ThemeColor.BACKGROUND -> it.copy(background = c)
-                    ThemeColor.ACCENT -> it.copy(accent = c)
+                    ThemeColor.ACCENT -> it.withAccentPalette(c)
                     ThemeColor.BACKING -> it.copy(backing = c)
                 }
             }

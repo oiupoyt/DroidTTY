@@ -42,6 +42,18 @@ object ScreenPolicy {
     /** The screen-on the always-on display itself triggers arrives within this window. */
     const val AOD_WAKE_MS = 3_000L
 
+    /**
+     * Whether a screen-on is the one the always-on display caused by turning the screen on.
+     * The first screen-on after it starts is its own however late it arrives (slow phones
+     * send it after several seconds, which used to read as the power key and jump straight
+     * to the lock screen). Past [AOD_WAKE_MAX_MS] the display evidently never lit, so the
+     * next screen-on is the user's.
+     */
+    fun aodOwnWake(awaitingWake: Boolean, sinceLaunchMs: Long): Boolean =
+        awaitingWake && sinceLaunchMs in 0 until AOD_WAKE_MAX_MS
+
+    const val AOD_WAKE_MAX_MS = 15_000L
+
     enum class Guard { IGNORE, COLLAPSE_SHADE, SEND_HOME }
 
     /**

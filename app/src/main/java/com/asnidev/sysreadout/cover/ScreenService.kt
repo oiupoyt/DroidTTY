@@ -153,6 +153,7 @@ class ScreenService : Service() {
         }
         if (ScreenPolicy.aodOnScreenOff(prefs, now(), CoverState.suppressed)) {
             CoverState.aodLaunchedAt = t
+            CoverState.awaitingAodWake = true
             // An activity can only turn the screen on as it is launched; a waking wake lock covers phones
             // where that is ignored for launches from the background.
             @Suppress("DEPRECATION")
@@ -165,7 +166,9 @@ class ScreenService : Service() {
 
     private fun screenOn() {
         val t = SystemClock.elapsedRealtime()
-        if (prefs.lockScreen == LockScreenMode.COVER &&
+        val own = ScreenPolicy.aodOwnWake(CoverState.awaitingAodWake, t - CoverState.aodLaunchedAt)
+        CoverState.awaitingAodWake = false
+        if (!own && prefs.lockScreen == LockScreenMode.COVER &&
             ScreenPolicy.coverOnScreenOn(prefs, now(), CoverState.aodShowing(t), t - CoverState.aodLaunchedAt)
         ) {
             CoverActivity.start(this, CoverActivity.MODE_LOCK)

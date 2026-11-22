@@ -30,6 +30,7 @@ import com.asnidev.sysreadout.data.LockMode
 import com.asnidev.sysreadout.data.LogLayout
 import com.asnidev.sysreadout.data.MonitorPrefs
 import com.asnidev.sysreadout.data.Preset
+import com.asnidev.sysreadout.data.PresetScreen
 import com.asnidev.sysreadout.data.Presets
 import com.asnidev.sysreadout.data.SettingsStore
 import com.asnidev.sysreadout.data.StyleElement
@@ -347,12 +348,17 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The theme, plus the always-on look and lock preset a built-in preset comes with. */
     fun applyPreset(p: Preset) {
-        updateTheme { p.theme }
-        p.screen?.let { s -> updateCover { it.copy(aodLook = s.aodLook, lockPreset = s.lockPreset, aodColor = s.aodColor) } }
+        // One job, in order: the screens never see the new look with the old theme, or the reverse.
+        scope.launch {
+            store.updateTheme { p.theme }
+            p.screen?.let { s -> store.updateCover { it.copy(aodLook = s.aodLook, lockPreset = s.lockPreset, aodColor = s.aodColor) } }
+        }
     }
 
+    /** Saves the colours and fonts with the current always-on look and lock preset. */
     fun savePreset(name: String) {
-        val preset = Preset(name.trim(), theme.value)
+        val c = cover.value
+        val preset = Preset(name.trim(), theme.value, PresetScreen(c.aodLook, c.lockPreset, c.aodColor))
         scope.launch { store.updatePresets { list -> list.filter { it.name != preset.name } + preset } }
     }
 

@@ -97,6 +97,26 @@ data class Theme(
         StyleElement.BANNER -> copy(banner = s)
     }
 
+    /**
+     * Sets the accent and recolours every text to match it, the way the built-in presets
+     * are made: clock, menu, drawer and banner in the accent, the log a little toward the
+     * background, the date further. Mixing toward the background keeps it right on light
+     * themes too.
+     */
+    fun withAccentPalette(accent: Long): Theme {
+        val log = mix(accent, background, LOG_MIX)
+        val date = mix(accent, background, DATE_MIX)
+        return copy(
+            accent = accent,
+            clock = clock.copy(color = accent),
+            menu = menu.copy(color = accent),
+            drawer = drawer.copy(color = accent),
+            banner = banner.copy(color = accent),
+            log = this.log.copy(color = log),
+            date = this.date.copy(color = date),
+        )
+    }
+
     /** Swaps every use of a font, e.g. after the user deletes an imported one. */
     fun replacingFont(old: String, new: String): Theme =
         StyleElement.entries.fold(this) { t, e ->
@@ -131,6 +151,16 @@ data class Theme(
         }
 
         fun hex(c: Long): String = "#%08X".format(c and 0xFFFFFFFFL)
+
+        private const val LOG_MIX = 0.18f
+        private const val DATE_MIX = 0.32f
+
+        /** [a] moved [t] of the way to [b], per channel; opaque. */
+        fun mix(a: Long, b: Long, t: Float): Long {
+            fun ch(c: Long, shift: Int) = ((c shr shift) and 0xFF).toInt()
+            fun m(shift: Int) = (ch(a, shift) + (ch(b, shift) - ch(a, shift)) * t).toInt().coerceIn(0, 255).toLong()
+            return 0xFF000000L or (m(16) shl 16) or (m(8) shl 8) or m(0)
+        }
 
         /** Accepts #RRGGBB or #AARRGGBB. */
         fun parseColor(s: String): Long? {
@@ -175,17 +205,31 @@ data class PresetScreen(val aodLook: AodLook, val lockPreset: LockPreset, val ao
 fun PresetScreen?.matches(c: CoverPrefs): Boolean =
     this == null || (c.aodLook == aodLook && c.lockPreset == lockPreset && c.aodColor == aodColor)
 
-/** [screen] is null for the user's own presets, which save colours and fonts only. */
+/** [screen] is null only for presets saved before presets carried the always-on look and lock screen. */
 data class Preset(val name: String, val theme: Theme, val screen: PresetScreen? = null)
 
-fun List<Preset>.toJson(): String =
-    JSONArray().apply { forEach { put(JSONObject().put("name", it.name).put("theme", it.theme.toJson())) } }.toString()
+fun List<Preset>.toJson(): String = JSONArray().apply {
+    forEach { p ->
+        val o = JSONObject().put("name", p.name).put("theme", p.theme.toJson())
+        p.screen?.let { s ->
+            o.put("screen", JSONObject().put("aodLook", s.aodLook.name).put("lockPreset", s.lockPreset.name).put("aodColor", s.aodColor.name))
+        }
+        put(o)
+    }
+}.toString()
 
+/** Presets saved before they carried a screen load with none, and apply colours and fonts only. */
 fun presetsFromJson(s: String?): List<Preset> = runCatching {
     val a = JSONArray(s ?: return emptyList())
     (0 until a.length()).map { i ->
         val o = a.getJSONObject(i)
-        Preset(o.getString("name"), Theme.fromJson(o.getJSONObject("theme")))
+        val screen = o.optJSONObject("screen")?.let { sc ->
+            val look = AodLook.entries.firstOrNull { it.name == sc.optString("aodLook") }
+            val lock = LockPreset.entries.firstOrNull { it.name == sc.optString("lockPreset") }
+            val color = AodColor.entries.firstOrNull { it.name == sc.optString("aodColor") } ?: AodColor.THEME
+            if (look != null && lock != null) PresetScreen(look, lock, color) else null
+        }
+        Preset(o.getString("name"), Theme.fromJson(o.getJSONObject("theme")), screen)
     }
 }.getOrDefault(emptyList())
 

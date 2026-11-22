@@ -98,7 +98,7 @@ data class CoverPrefs(
     /** Raises the own lock's keypad off the bottom edge, in dp. */
     val keypadLift: Int = 0,
     /** Digits in a new random order each time the own lock shows. */
-    val shuffleKeypad: Boolean = true,
+    val shuffleKeypad: Boolean = false,
     /** A double tap skips a lock preset's animation to its last screen. */
     val skipOnDoubleTap: Boolean = true,
     /** Shade parts shown, top to bottom; a part left out is hidden. */

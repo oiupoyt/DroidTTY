@@ -23,8 +23,8 @@ android {
         applicationId = "space.oiupoyt.droidtty"
         minSdk = 26
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.5.5"
+        versionCode = 19
+        versionName = "0.5.6"
     }
 
     signingConfigs {

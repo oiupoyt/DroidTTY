@@ -258,6 +258,7 @@ class CoverHost(private val service: AccessibilityService) {
         if (mode == Mode.COVER) hideScreen()
         if (ScreenPolicy.aodOnScreenOff(prefs, phone(), CoverState.suppressed)) {
             CoverState.aodLaunchedAt = t
+            CoverState.awaitingAodWake = true
             showAod()
         } else if (ownLocked) {
             // Ready behind the dark screen, so nothing of the phone shows when it wakes.
@@ -269,15 +270,17 @@ class CoverHost(private val service: AccessibilityService) {
         val t = SystemClock.elapsedRealtime()
         // The always-on display turned the screen on itself (some phones send that late, or
         // twice): it stays. Only a later wake, like the power key, moves on to the lock.
+        val own = ScreenPolicy.aodOwnWake(CoverState.awaitingAodWake, t - CoverState.aodLaunchedAt)
+        CoverState.awaitingAodWake = false
         if (mode == Mode.AOD) {
-            if (t - CoverState.aodLaunchedAt >= ScreenPolicy.AOD_WAKE_MS) afterAod()
+            if (!own) afterAod()
             return
         }
         if (ownLocked) {
             showScreen(Mode.OWN)
             return
         }
-        if (prefs.lockScreen == LockScreenMode.COVER && ScreenPolicy.coverOnScreenOn(prefs, phone(), false, t - CoverState.aodLaunchedAt)) {
+        if (!own && prefs.lockScreen == LockScreenMode.COVER && ScreenPolicy.coverOnScreenOn(prefs, phone(), false, t - CoverState.aodLaunchedAt)) {
             showScreen(Mode.COVER)
         }
     }
