@@ -202,11 +202,10 @@
     grid.querySelectorAll("li").forEach((li) => { li.hidden = b.dataset.filter !== "all" && li.dataset.kind !== b.dataset.filter; });
   }));
 
-  // ---- latest version: the copy of the app's update file served with the site ----
-  // (GitHub's download redirect sends no CORS header, so browsers can't read it there.)
+  // ---- latest version: the site's worker reads it live from the GitHub release ----
   const ver = document.getElementById("dl-version");
   const notes = document.getElementById("dl-notes");
-  fetch("version.json", { cache: "no-cache" })
+  fetch("/version.json", { cache: "no-cache" })
     .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
     .then((v) => { ver.textContent = v.versionName; notes.textContent = v.notes || ""; })
     .catch(() => { ver.textContent = "see all releases"; });

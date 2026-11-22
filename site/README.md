@@ -1,10 +1,12 @@
 # droidtty.oiupoyt.space
 
-The DroidTTY website: plain static files, no build step, no server code.
+The DroidTTY website: static files, plus a small worker (`worker/index.js`) that serves the
+latest release version. No build step.
 
 ## Deploy
 
-Serve this folder as the web root for `droidtty.oiupoyt.space` (any static server:
+Deploy with `npx wrangler deploy` from the repo root (config in `wrangler.json`). To host
+elsewhere, serve this folder as the web root for `droidtty.oiupoyt.space` (any static server:
 caddy `file_server`, nginx `root`, etc.). Everything is relative, so it also works
 from a sub-path. Suggested headers:
 
@@ -14,10 +16,9 @@ from a sub-path. Suggested headers:
 
 ## Keeping it current
 
-- `version.json`: the latest release for the download section. Browsers can't read
-  GitHub's copy (no CORS header on the download redirect), so the page falls back to
-  this file. Refresh it after a release:
-  `curl -sL https://github.com/oiupoyt/DroidTTY/releases/download/latest/version.json > version.json`
+- `version.json`: the download section's version is read live from the latest GitHub
+  release by the worker (`worker/index.js`, cached five minutes), so a new release shows
+  without redeploying. This copy is only the fallback for when GitHub can't be reached.
 - `assets/gallery/`: copied from `docs/gallery/` (regenerate with `tools/gallery.py`).
 - `assets/frames.json`: the always-on and boot frames the phones play, a trimmed copy
   of the `gallery-frames` CI artifact.
