@@ -1,4 +1,4 @@
-SysReadout Launcher is a minimal home screen for people who like to know what their phone is doing. Behind a short list of your apps runs a live, terminal-style readout of the system: pinned status rows, monitor tables and a scrolling event log, styled like an old CRT terminal if you want it to be.
+DroidTTY is a minimal home screen for people who like to know what their phone is doing. Behind a short list of your apps runs a live, terminal-style readout of the system: pinned status rows, monitor tables and a scrolling event log, styled like an old CRT terminal if you want it to be.
 
 The launcher:
 * A handful of pinned apps as clean text entries, limited only by screen height; everything else is one swipe away in a searchable drawer.
@@ -27,3 +27,5 @@ Make it yours:
 * Lock screen: leave it alone, use your own image, or show a snapshot of the log.
 
 The log only runs while the home screen is visible. Nothing is collected or sent anywhere: no ads, no analytics, no tracking. The app goes online only for two optional features: the DNS monitor, and the reverse DNS lookups of connection addresses with Shizuku.
+
+DroidTTY is a fork of SysReadout Launcher by AndSni, adding an animated ASCII always-on display, boot-screen lock screens, its own PIN lock and notification shade.

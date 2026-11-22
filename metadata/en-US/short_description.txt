@@ -1,1 +1,1 @@
-Minimal launcher that turns your home screen into a live system monitor
+Terminal launcher: live system readout, ASCII always-on display, boot lockscreen
