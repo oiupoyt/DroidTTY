@@ -18,7 +18,7 @@ screens, shade and the Shizuku fallback described below.
 <img src="docs/gallery/aod/aquarium.gif" width="150" alt="Always-on display, aquarium: ASCII fish, bubbles and seaweed">
 </p>
 
-**[See every look and preset in the gallery ›](docs/GALLERY.md)**
+**[droidtty.oiupoyt.space](https://droidtty.oiupoyt.space)**: the website, with every screen on a 3D phone, the gallery and downloads. Or [see the gallery here](docs/GALLERY.md).
 
 ## Features
 
@@ -65,7 +65,7 @@ Everything is explained in the **[user manual](docs/MANUAL.md)**.
 
 ## Install
 
-Download `DroidTTY.apk` from the [latest release](https://github.com/oiupoyt/DroidTTY/releases/latest) (also on [Forgejo](https://git.oiupoyt.space/oiupoyt/DroidTTY/releases)) and open it (allow "install unknown apps"). DroidTTY has its own app id, `space.oiupoyt.droidtty`, so it installs beside SysReadout rather than over it.
+Download from [droidtty.oiupoyt.space](https://droidtty.oiupoyt.space/#download), or `DroidTTY.apk` from the [latest release](https://github.com/oiupoyt/DroidTTY/releases/latest) (also on [Forgejo](https://git.oiupoyt.space/oiupoyt/DroidTTY/releases)) and open it (allow "install unknown apps"). DroidTTY has its own app id, `space.oiupoyt.droidtty`, so it installs beside SysReadout rather than over it.
 
 Then make it your home screen: **Settings › Apps › Default apps › Home app › DroidTTY**.
 

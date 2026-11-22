@@ -36,8 +36,33 @@
     try { localStorage.setItem("droidtty-theme", t); } catch (e) { /* private mode: not remembered */ }
   }
   themeButtons.forEach((b) => b.addEventListener("click", () => setTheme(b.dataset.setTheme)));
-  try { const saved = localStorage.getItem("droidtty-theme"); if (saved) setTheme(saved); } catch (e) { /* default stays */ }
+  let saved = null;
+  try { saved = localStorage.getItem("droidtty-theme"); } catch (e) { saved = "green"; /* no storage: asking on every visit would nag, so skip the picker */ }
+  if (saved) setTheme(saved);
   retint();
+
+  // First visit: ask for a colour once. Closing it any way keeps green p1 and remembers that.
+  const picker = document.getElementById("picker");
+  if (!saved && picker && picker.showModal) {
+    picker.addEventListener("click", (e) => {
+      const opt = e.target.closest("[data-pick]");
+      if (opt) { setTheme(opt.dataset.pick); picker.close(); }
+      else if (e.target === picker) picker.close();
+    });
+    // Previewing: the page behind shows each colour as the visitor moves through the list.
+    picker.querySelectorAll("[data-pick]").forEach((b) => {
+      const preview = () => { document.body.dataset.theme = b.dataset.pick; retint(); };
+      b.addEventListener("pointerenter", preview);
+      b.addEventListener("focus", preview);
+    });
+    picker.addEventListener("close", () => {
+      let chosen = null;
+      try { chosen = localStorage.getItem("droidtty-theme"); } catch (e) { /* stays unsaved */ }
+      setTheme(chosen || "green");
+    });
+    picker.showModal();
+    picker.querySelector("[data-pick]").focus();
+  }
 
   // ---- phones ----
   const phones = Array.from(document.querySelectorAll(".phone"));

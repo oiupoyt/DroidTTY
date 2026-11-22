@@ -123,8 +123,42 @@ h3 { font-size: 28px; }
   width: 44px; height: 44px; padding: 0; border: 1px solid transparent; background: none; cursor: pointer;
   display: grid; place-items: center;
 }
-.themes button i { width: 16px; height: 16px; background: var(--c); border: 1px solid var(--line); display: block; }
-.themes button[aria-pressed="true"] { border-color: var(--fg); }
+.themes button[aria-pressed="true"] { border-color: var(--line); background: var(--surface); }
+.themes button:hover .glyph { transform: scale(1.15); }
+
+/* Each preset's symbol in its own colour with a phosphor glow, whatever the page's theme. */
+.glyph {
+  font-style: normal; font-family: "VT323", ui-monospace, monospace; font-size: 26px; line-height: 1;
+  display: inline-block; transition: transform 0.15s;
+}
+.glyph-green { color: #1aff80; text-shadow: 0 0 4px #1aff80, 0 0 12px rgba(26, 255, 128, 0.7); }
+.glyph-amber { color: #ffb000; text-shadow: 0 0 4px #ffb000, 0 0 12px rgba(255, 176, 0, 0.7); }
+.glyph-ember { color: #ff7a3d; text-shadow: 0 0 4px #ff5a1f, 0 0 12px rgba(255, 90, 31, 0.75); }
+.glyph-space { color: #cdebff; text-shadow: 0 0 4px #7fd3ff, 0 0 12px rgba(127, 211, 255, 0.75); }
+/* Paper is ink, not light: no glow, a paper chip behind it so it shows on dark themes. */
+.glyph-paper { color: #1d1d1b; background: #e8e6dc; padding: 0 4px; text-shadow: none; }
+.themes button[aria-pressed="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 4px; height: 2px; background: var(--fg); }
+.themes button { position: relative; }
+@media (prefers-reduced-motion: reduce) { .glyph { transition: none; } }
+
+/* ---- first-visit colour picker ---- */
+.picker {
+  border: 1px solid var(--fg); background: var(--bg); color: var(--text);
+  padding: clamp(20px, 4vw, 32px); width: min(92vw, 520px);
+}
+.picker::backdrop { background: rgba(0, 0, 0, 0.86); }
+.picker h2 { font-size: clamp(32px, 6vw, 44px); }
+.picker p { color: var(--dim); margin: 10px 0 18px; }
+.picker-list { display: grid; gap: 6px; }
+.picker-opt {
+  display: grid; grid-template-columns: 44px 1fr; grid-template-rows: auto auto; align-items: center;
+  column-gap: 12px; text-align: left; min-height: 60px; padding: 8px 14px;
+  background: none; border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer;
+}
+.picker-opt .glyph { grid-row: 1 / 3; font-size: 34px; justify-self: center; }
+.picker-opt b { font-family: "VT323"; font-weight: 400; font-size: 24px; color: var(--fg); line-height: 1; }
+.picker-opt span { color: var(--dim); font-size: 13px; }
+.picker-opt:hover, .picker-opt:focus-visible { border-color: var(--fg); background: var(--surface); }
 
 /* ---- sections ---- */
 /* Content stays within ~1200px on wide screens; the side padding grows instead. */
@@ -277,12 +311,15 @@ section {
   .tabs { flex-direction: row; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
   .tabs button { flex: 0 0 auto; min-width: 150px; scroll-snap-align: start; }
   .dl-body { grid-template-columns: 1fr; }
-  .themes { display: none; }
 }
 /* Phones: the nav keeps only download, the phone mockups shrink to the screen. */
 @media (max-width: 620px) {
   body { font-size: 14px; }
   .nav a:not(.nav-dl) { display: none; }
+  .top { gap: 8px; }
+  .brand span { display: none; }
+  .themes button { width: 36px; }
+  .glyph { font-size: 22px; }
   .feature-list { grid-template-columns: 1fr; }
   .feature-list article:first-child { grid-column: auto; }
   .feature-list article { padding: 22px 18px; }

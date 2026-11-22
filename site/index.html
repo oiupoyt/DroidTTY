@@ -30,11 +30,11 @@
     <a href="#download" class="nav-dl">download</a>
   </nav>
   <div class="themes" role="group" aria-label="site colours, the app's own presets">
-    <button type="button" data-set-theme="green" aria-pressed="true" title="green p1"><i style="--c:#1aff80"></i><span class="sr">green p1</span></button>
-    <button type="button" data-set-theme="amber" aria-pressed="false" title="amber p3"><i style="--c:#ffb000"></i><span class="sr">amber p3</span></button>
-    <button type="button" data-set-theme="ember" aria-pressed="false" title="ember"><i style="--c:#ff7a3d"></i><span class="sr">ember</span></button>
-    <button type="button" data-set-theme="space" aria-pressed="false" title="deep space"><i style="--c:#7fd3ff"></i><span class="sr">deep space</span></button>
-    <button type="button" data-set-theme="paper" aria-pressed="false" title="paper"><i style="--c:#e8e6dc"></i><span class="sr">paper</span></button>
+    <button type="button" data-set-theme="green" aria-pressed="true" title="green p1"><i class="glyph glyph-green" aria-hidden="true">▓</i><span class="sr">green p1</span></button>
+    <button type="button" data-set-theme="amber" aria-pressed="false" title="amber p3"><i class="glyph glyph-amber" aria-hidden="true">◆</i><span class="sr">amber p3</span></button>
+    <button type="button" data-set-theme="ember" aria-pressed="false" title="ember"><i class="glyph glyph-ember" aria-hidden="true">▲</i><span class="sr">ember</span></button>
+    <button type="button" data-set-theme="space" aria-pressed="false" title="deep space"><i class="glyph glyph-space" aria-hidden="true">✦</i><span class="sr">deep space</span></button>
+    <button type="button" data-set-theme="paper" aria-pressed="false" title="paper"><i class="glyph glyph-paper" aria-hidden="true">¶</i><span class="sr">paper</span></button>
   </div>
 </header>
 
@@ -170,6 +170,19 @@ mem   3.1G / 7.5G available</pre>
     </feComponentTransfer>
   </filter>
 </svg>
+
+<!-- First visit: choose the colours, like picking a preset in the app. -->
+<dialog class="picker" id="picker" aria-labelledby="picker-h">
+  <h2 id="picker-h"><span class="hash">#</span> pick your phosphor</h2>
+  <p>The site takes on one of the app's presets. You can change it any time from the top bar.</p>
+  <div class="picker-list">
+    <button type="button" class="picker-opt" data-pick="green"><i class="glyph glyph-green" aria-hidden="true">▓</i><b>green p1</b><span>green phosphor, the classic</span></button>
+    <button type="button" class="picker-opt" data-pick="amber"><i class="glyph glyph-amber" aria-hidden="true">◆</i><b>amber p3</b><span>amber dos screen</span></button>
+    <button type="button" class="picker-opt" data-pick="ember"><i class="glyph glyph-ember" aria-hidden="true">▲</i><b>ember</b><span>deep red, doom fire</span></button>
+    <button type="button" class="picker-opt" data-pick="space"><i class="glyph glyph-space" aria-hidden="true">✦</i><b>deep space</b><span>ice blue on black</span></button>
+    <button type="button" class="picker-opt" data-pick="paper"><i class="glyph glyph-paper" aria-hidden="true">¶</i><b>paper</b><span>dark ink on light paper</span></button>
+  </div>
+</dialog>
 
 <dialog class="lightbox" id="lightbox" aria-label="gallery image">
   <form method="dialog"><button class="close" aria-label="close">[x]</button></form>
