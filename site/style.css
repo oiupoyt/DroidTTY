@@ -78,6 +78,7 @@
 *, *::before, *::after { box-sizing: border-box; border-radius: 0 !important; }
 
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (max-width: 620px) { html { scroll-padding-top: 116px; } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
@@ -112,15 +113,22 @@ h3 { font-size: 28px; }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: "VT323", monospace; font-size: 28px; color: var(--fg); }
-.brand img { image-rendering: pixelated; }
-.nav { display: flex; gap: 4px; margin-left: auto; }
+/* The app icon drawn inline, so it takes the theme's colours. */
+.logo { display: block; flex: none; }
+.logo .i-glow { fill: var(--fg); opacity: 0.2; }
+.logo .i-scan { fill: #000; opacity: 0.14; }
+.logo .i-frame { stroke: var(--fg); }
+.logo .i-fg { fill: var(--fg); }
+.logo .i-dim { fill: var(--dim); }
+.brand .logo { filter: drop-shadow(0 0 3px var(--glow)); }
+.nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .nav a { text-decoration: none; padding: 10px 12px; color: var(--text); min-height: 44px; display: inline-flex; align-items: center; }
 .nav a:hover { color: var(--fg); background: var(--surface); }
 .nav .nav-dl { color: var(--on-accent); background: var(--accent); }
 .nav .nav-dl:hover { color: var(--on-accent); background: var(--fg); }
-.themes { display: flex; gap: 2px; }
+.themes { display: flex; align-items: center; gap: 2px; padding-left: 12px; border-left: 1px solid var(--line); height: 44px; }
 .themes button {
-  width: 44px; height: 44px; padding: 0; border: 1px solid transparent; background: none; cursor: pointer;
+  width: 40px; height: 44px; padding: 0; border: 1px solid transparent; background: none; cursor: pointer;
   display: grid; place-items: center;
 }
 .themes button[aria-pressed="true"] { border-color: var(--line); background: var(--surface); }
@@ -315,10 +323,14 @@ section {
 /* Phones: the nav keeps only download, the phone mockups shrink to the screen. */
 @media (max-width: 620px) {
   body { font-size: 14px; }
-  .nav a:not(.nav-dl) { display: none; }
+  .nav a:not(.nav-dl):not(.nav-keep) { display: none; }
+  .nav a { padding: 10px 8px; }
+  /* Phones: the five colours get their own row under brand and links, spread across it. */
+  .top { flex-wrap: wrap; row-gap: 0; padding-bottom: 4px; }
+  .themes { order: 3; width: 100%; justify-content: space-between; padding: 0; border-left: 0; border-top: 1px solid var(--line); }
   .top { gap: 8px; }
   .brand span { display: none; }
-  .themes button { width: 36px; }
+  .themes button { width: 44px; }
   .glyph { font-size: 22px; }
   .feature-list { grid-template-columns: 1fr; }
   .feature-list article:first-child { grid-column: auto; }
@@ -385,3 +397,6 @@ section {
 /* Gallery images are drawn in green p1; an SVG filter maps their brightness onto the
    chosen theme's background and text colours (main.js keeps it in step). */
 .grid img, .lightbox img { filter: url(#retint); }
+/* Screenshots show the app's real presets in their own colours: no recolouring. */
+.grid li.real img, .lightbox img.real { filter: none; }
+.grid li.real img { aspect-ratio: 1080 / 2392; object-fit: cover; }

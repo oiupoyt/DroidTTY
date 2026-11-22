@@ -162,13 +162,19 @@
     ["arch", "arch linux"], ["bootline", "bootline"], ["bios", "bios flash"], ["dos", "dos prompt"], ["login", "unix login"],
     ["grub", "grub menu"], ["c64", "commodore 64"], ["panic", "kernel panic"], ["ssh", "ssh login"], ["wakeup", "wake up"],
   ];
+  // Captured on a phone running DroidTTY (Nothing, Android 16), not rendered.
+  const SHOTS = [
+    ["home-green", "home · green p1"], ["home-space", "home · deep space"], ["home-arcade", "home · arcade"],
+    ["home-mono", "home · white crt"], ["settings-presets", "settings · presets"],
+  ];
   const items = [
+    ...SHOTS.map(([f, t]) => ({ kind: "real", still: "assets/shots/" + f + ".webp", full: "assets/shots/" + f + ".webp", title: t, tag: "screenshot" })),
     ...LOOKS.map(([f, t, anim]) => ({ kind: "aod", still: "assets/gallery/aod/" + f + ".png", full: "assets/gallery/aod/" + f + (anim ? ".gif" : ".png"), title: t, tag: anim ? "animated" : "always-on" })),
     ...LOCKS.map(([f, t]) => ({ kind: "lock", still: "assets/gallery/lock/" + f + ".png", full: "assets/gallery/lock/" + f + ".gif", title: t, tag: "lock" })),
   ];
   const grid = document.getElementById("gallery-grid");
   grid.innerHTML = items.map((it, i) =>
-    '<li data-kind="' + it.kind + '"><button type="button" data-i="' + i + '" aria-label="' + it.title + ', ' + it.tag + ', open larger">' +
+    '<li data-kind="' + it.kind + '"' + (it.kind === "real" ? ' class="real"' : "") + '><button type="button" data-i="' + i + '" aria-label="' + it.title + ', ' + it.tag + ', open larger">' +
     '<img src="' + it.still + '" alt="' + it.title + ' (' + it.tag + ')" loading="lazy" width="360" height="760"></button>' +
     '<div class="cap"><b>' + it.title + "</b><span>" + it.tag + "</span></div></li>").join("");
   retint();
@@ -180,6 +186,7 @@
     if (!b) return;
     const it = items[+b.dataset.i];
     boxImg.src = it.full;
+    boxImg.classList.toggle("real", it.kind === "real");
     boxImg.alt = it.title;
     boxCap.textContent = it.title + " · " + it.tag;
     if (box.showModal) box.showModal(); else window.open(it.full);
