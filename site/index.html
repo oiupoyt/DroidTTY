@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DroidTTY: your Android phone as a terminal</title>
+<meta name="description" content="DroidTTY is an Android launcher that turns your phone into a terminal: a live system readout, animated ASCII always-on display, boot-screen lock screens and its own notification shade. Free and open source.">
+<link rel="canonical" href="https://droidtty.oiupoyt.space/">
+<meta property="og:title" content="DroidTTY">
+<meta property="og:description" content="An Android launcher that turns your phone into a terminal.">
+<meta property="og:url" content="https://droidtty.oiupoyt.space/">
+<meta property="og:image" content="https://droidtty.oiupoyt.space/assets/icon.png">
+<meta name="theme-color" content="#020e05">
+<link rel="icon" href="assets/icon.png">
+<link rel="preload" href="assets/fonts/vt323_regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="green">
+<a class="skip" href="#main">skip to content</a>
+
+<header class="top">
+  <a class="brand" href="#top" aria-label="DroidTTY home">
+    <img src="assets/icon.png" alt="" width="32" height="32">
+    <span>droidtty</span>
+  </a>
+  <nav class="nav" aria-label="sections">
+    <a href="#screens">screens</a>
+    <a href="#features">features</a>
+    <a href="#gallery">gallery</a>
+    <a href="#download" class="nav-dl">download</a>
+  </nav>
+  <div class="themes" role="group" aria-label="site colours, the app's own presets">
+    <button type="button" data-set-theme="green" aria-pressed="true" title="green p1"><i style="--c:#1aff80"></i><span class="sr">green p1</span></button>
+    <button type="button" data-set-theme="amber" aria-pressed="false" title="amber p3"><i style="--c:#ffb000"></i><span class="sr">amber p3</span></button>
+    <button type="button" data-set-theme="ember" aria-pressed="false" title="ember"><i style="--c:#ff7a3d"></i><span class="sr">ember</span></button>
+    <button type="button" data-set-theme="space" aria-pressed="false" title="deep space"><i style="--c:#7fd3ff"></i><span class="sr">deep space</span></button>
+    <button type="button" data-set-theme="paper" aria-pressed="false" title="paper"><i style="--c:#e8e6dc"></i><span class="sr">paper</span></button>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero" id="top">
+  <div class="hero-copy">
+    <p class="prompt"><span class="ps">user@phone:~$</span> <span class="typed" data-type="droidtty --help">droidtty --help</span></p>
+    <h1>Your Android phone, as a terminal.</h1>
+    <p class="lede">A launcher that puts your apps in front of a live readout of the phone: processes, connections, battery, network. Around it, an always-on display in animated ASCII, lock screens that boot like a PC, and a notification shade drawn in boxes.</p>
+    <div class="cta">
+      <a class="btn primary" href="#download">download the apk</a>
+      <a class="btn" href="https://github.com/oiupoyt/DroidTTY">source on github</a>
+    </div>
+    <p class="meta">free · open source (GPL-3.0) · android 8.0+ · no ads, no tracking</p>
+  </div>
+  <div class="hero-stage" aria-hidden="true">
+    <div class="phone hero-phone tilt" data-screen="home"></div>
+  </div>
+</section>
+
+<section class="screens" id="screens" aria-labelledby="screens-h">
+  <div class="section-head">
+    <h2 id="screens-h"><span class="hash">#</span> every screen</h2>
+    <p>Six parts of the phone, all in the same terminal. Pick one; the phone turns to it. Screens are drawn here in HTML after the app's own layout; the always-on and boot ones play the app's real frames.</p>
+  </div>
+  <div class="screens-body">
+    <div class="tabs" role="tablist" aria-label="screens">
+      <button role="tab" aria-selected="true" aria-controls="screen-panel" data-tab="home"><b>home</b><span>your apps over the live log</span></button>
+      <button role="tab" aria-selected="false" aria-controls="screen-panel" data-tab="drawer"><b>app drawer</b><span>type to find, one match opens</span></button>
+      <button role="tab" aria-selected="false" aria-controls="screen-panel" data-tab="aod"><b>always-on</b><span>19 looks, 11 animated</span></button>
+      <button role="tab" aria-selected="false" aria-controls="screen-panel" data-tab="boot"><b>boot</b><span>10 presets, from arch to c64</span></button>
+      <button role="tab" aria-selected="false" aria-controls="screen-panel" data-tab="lock"><b>lock screen</b><span>pin prompt in the boot's voice</span></button>
+      <button role="tab" aria-selected="false" aria-controls="screen-panel" data-tab="settings"><b>settings</b><span>everything, one terminal page</span></button>
+    </div>
+    <div class="stage" id="screen-panel" role="tabpanel" aria-live="polite">
+      <div class="phone stage-phone tilt" data-screen="home"></div>
+      <p class="stage-note" id="stage-note">home: pinned apps as text, in front of the readout. swipe up for the drawer, down for the shade.</p>
+    </div>
+  </div>
+</section>
+
+<section class="features" id="features" aria-labelledby="features-h">
+  <div class="section-head">
+    <h2 id="features-h"><span class="hash">#</span> what's in it</h2>
+  </div>
+  <div class="feature-list">
+    <article>
+      <h3>the readout</h3>
+      <p>52 status rows you pick and order: cpu clocks and load, memory, thermal headroom, battery current in watts, network speed, wi-fi and cell signal, gps fix, sunrise, moon phase. An event stream logs network changes, installs and app switches.</p>
+      <pre class="sample" aria-label="sample rows">cpu   8 cores  0.60-2.85 GHz  schedutil
+bat   76%  discharging  31.2°C  good
+net   wifi  ↓1.2M/s ↑48K/s
+mem   3.1G / 7.5G available</pre>
+    </article>
+    <article>
+      <h3>system monitor</h3>
+      <p>With <a href="https://shizuku.rikka.app/">Shizuku</a>: processes by cpu, every connection per app with server names, wakelocks, battery drain per app, temperatures, system errors. Phones where Shizuku can't start a helper fall back to its own shell by themselves.</p>
+    </article>
+    <article>
+      <h3>always-on display</h3>
+      <p>Doom fire, starfield, game of life, a spinning cube, rain, an aquarium, an oscilloscope, pong, plasma, a dna helix and matrix rain, plus still looks like neofetch and htop. Size, brightness, colour, position and timeout are yours; it goes dark in a pocket.</p>
+    </article>
+    <article>
+      <h3>lock screens that boot</h3>
+      <p>Ten presets built from your phone's real kernel, memory and battery: a full arch linux boot, a bios flash, dos, a getty login, grub, a commodore 64, a kernel panic, ssh. Over android's own lock, or as droidtty's own pin lock with a shuffled keypad.</p>
+    </article>
+    <article>
+      <h3>its own shade</h3>
+      <p>Notifications in ascii boxes with reply, snooze and actions. Toggles for wi-fi, bluetooth, data, nfc, hotspot, battery saver and more; brightness and volume sliders; bluetooth devices with battery; what's playing.</p>
+    </article>
+    <article>
+      <h3>dressed as a crt</h3>
+      <p>Eleven presets (green p1, amber, paper, ember, deep space, matrix...) each with a matching always-on look and lock screen. Eleven bundled fonts or your own; glow, scanlines, curvature, vignette, colour fringe, flicker and grain.</p>
+    </article>
+  </div>
+</section>
+
+<section class="gallery" id="gallery" aria-labelledby="gallery-h">
+  <div class="section-head">
+    <h2 id="gallery-h"><span class="hash">#</span> gallery</h2>
+    <p>Rendered from the app's own frame code with a sample phone's values. Tap one to see it larger.</p>
+  </div>
+  <div class="filter" role="group" aria-label="show">
+    <button type="button" data-filter="all" aria-pressed="true">all</button>
+    <button type="button" data-filter="aod" aria-pressed="false">always-on</button>
+    <button type="button" data-filter="lock" aria-pressed="false">lock screens</button>
+  </div>
+  <ul class="grid" id="gallery-grid"></ul>
+  <noscript><p class="note">The gallery needs javascript; every image is also in <a href="https://github.com/oiupoyt/DroidTTY/blob/main/docs/GALLERY.md">docs/GALLERY.md</a>.</p></noscript>
+</section>
+
+<section class="download" id="download" aria-labelledby="download-h">
+  <div class="section-head">
+    <h2 id="download-h"><span class="hash">#</span> download</h2>
+  </div>
+  <div class="dl-body">
+    <div class="dl-main">
+      <p class="dl-version">latest: <b id="dl-version">checking…</b></p>
+      <p class="dl-notes" id="dl-notes"></p>
+      <div class="cta">
+        <a class="btn primary" id="dl-apk" href="https://github.com/oiupoyt/DroidTTY/releases/download/latest/DroidTTY.apk">download DroidTTY.apk</a>
+        <a class="btn" href="https://git.oiupoyt.space/oiupoyt/DroidTTY/releases">mirror on forgejo</a>
+        <a class="btn" href="https://github.com/oiupoyt/DroidTTY/releases">all releases</a>
+      </div>
+      <p class="fine">Signing certificate sha-256:<br><code class="fp">39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58ac277e8</code></p>
+    </div>
+    <ol class="steps">
+      <li><b>install</b> Open the apk and allow "install unknown apps" for your browser. Play Protect warns about apps that use accessibility and notification access; choose <i>more details › install anyway</i>.</li>
+      <li><b>make it home</b> Settings › apps › default apps › home app › DroidTTY.</li>
+      <li><b>get started</b> Long-press the home screen, open <i>get started</i>: each switch DroidTTY needs opens the exact android setting.</li>
+      <li><b>updates</b> DroidTTY checks once a day and offers new versions itself; you can switch that off.</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <p>DroidTTY is a fork of <a href="https://github.com/AndSni/SysReadout-Launcher">SysReadout Launcher</a> by AndSni. GPL-3.0. Fonts: VT323 and JetBrains Mono, SIL Open Font License.</p>
+  <p><a href="https://github.com/oiupoyt/DroidTTY">github</a> · <a href="https://git.oiupoyt.space/oiupoyt/DroidTTY">forgejo</a> · <a href="https://github.com/oiupoyt/DroidTTY/blob/main/docs/MANUAL.md">manual</a> · <a href="https://github.com/oiupoyt/DroidTTY/issues">issues</a></p>
+</footer>
+
+<dialog class="lightbox" id="lightbox" aria-label="gallery image">
+  <form method="dialog"><button class="close" aria-label="close">[x]</button></form>
+  <img id="lightbox-img" alt="">
+  <p id="lightbox-cap"></p>
+</dialog>
+
+<script src="screens.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
