@@ -4,4 +4,4 @@
 
 # Shizuku starts the helper in its own process from the class name we pass it
 # (ShizukuBridge), calling the constructor by reflection: nothing in our code does.
--keep class com.asnidev.sysreadout.monitor.ShellService { <init>(...); }
+-keep class space.oiupoyt.droidtty.monitor.ShellService { <init>(...); }

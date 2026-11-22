@@ -1,0 +1,396 @@
+package space.oiupoyt.droidtty
+
+import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Bitmap
+import androidx.core.content.ContextCompat
+import android.net.Uri
+import android.provider.Settings
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import space.oiupoyt.droidtty.apps.AppEntry
+import space.oiupoyt.droidtty.apps.AppRepository
+import space.oiupoyt.droidtty.data.AodMode
+import space.oiupoyt.droidtty.data.AppKey
+import space.oiupoyt.droidtty.data.CoverPrefs
+import space.oiupoyt.droidtty.cover.ScreenService
+import space.oiupoyt.droidtty.data.EntryStyle
+import space.oiupoyt.droidtty.data.HAlign
+import space.oiupoyt.droidtty.data.VAlign
+import space.oiupoyt.droidtty.data.LauncherPrefs
+import space.oiupoyt.droidtty.data.LockMode
+import space.oiupoyt.droidtty.data.LogLayout
+import space.oiupoyt.droidtty.data.MonitorPrefs
+import space.oiupoyt.droidtty.data.Preset
+import space.oiupoyt.droidtty.data.PresetScreen
+import space.oiupoyt.droidtty.data.Presets
+import space.oiupoyt.droidtty.data.SettingsStore
+import space.oiupoyt.droidtty.data.StyleElement
+import space.oiupoyt.droidtty.data.Theme
+import space.oiupoyt.droidtty.log.LogEngine
+import space.oiupoyt.droidtty.log.ProbeCatalog
+import space.oiupoyt.droidtty.monitor.DnsLog
+import space.oiupoyt.droidtty.monitor.DnsVpnService
+import space.oiupoyt.droidtty.monitor.NotifLog
+import space.oiupoyt.droidtty.monitor.SetupItem
+import space.oiupoyt.droidtty.monitor.ShizukuBridge
+import space.oiupoyt.droidtty.monitor.ShizukuSetup
+import space.oiupoyt.droidtty.system.CrashGuard
+import space.oiupoyt.droidtty.system.LockScreen
+import space.oiupoyt.droidtty.system.LockService
+import space.oiupoyt.droidtty.ui.Fonts
+import space.oiupoyt.droidtty.ui.settings.Page
+import space.oiupoyt.droidtty.update.UpdateChecker
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
+import java.io.File
+
+enum class Screen { HOME, DRAWER, SETTINGS }
+
+/**
+ * Debug builds only: home-screen settings to show without saving them, for
+ * screenshots and quick looks. Null fields keep the saved value.
+ */
+data class HomePreview(
+    /** App labels, in order. */
+    val pinned: List<String>? = null,
+    val style: EntryStyle? = null,
+    val showLog: Boolean? = null,
+    val showClock: Boolean? = null,
+    val showDate: Boolean? = null,
+    val hAlign: HAlign? = null,
+    val vAlign: VAlign? = null,
+    val shizuku: Boolean? = null,
+) {
+    fun applyTo(m: MonitorPrefs): MonitorPrefs = shizuku?.let { m.copy(shizuku = it) } ?: m
+
+    fun applyTo(p: LauncherPrefs, apps: List<AppEntry>): LauncherPrefs = if (this == HomePreview()) p else p.copy(
+        pinned = pinned?.mapNotNull { label -> apps.firstOrNull { !it.isWork && it.label.equals(label, ignoreCase = true) }?.key }
+            ?: p.pinned,
+        entryStyle = style ?: p.entryStyle,
+        showLog = showLog ?: p.showLog,
+        showClock = showClock ?: p.showClock,
+        showDate = showDate ?: p.showDate,
+        hAlign = hAlign ?: p.hAlign,
+        vAlign = vAlign ?: p.vAlign,
+    )
+}
+
+class LauncherViewModel(app: Application) : AndroidViewModel(app) {
+
+    // Background work that fails is logged, never allowed to crash the home screen.
+    private val scope: CoroutineScope =
+        viewModelScope + CoroutineExceptionHandler { _, e -> Log.w(TAG, "background task failed", e) }
+
+    /**
+     * Set by [CrashGuard] after DroidTTY crashed repeatedly right after starting:
+     * a plain launcher with the default look, and no log, Shizuku or DNS monitor.
+     */
+    val safeMode = MutableStateFlow(CrashGuard.isSafeMode(app))
+
+    val repo = AppRepository(app, scope)
+    private val store = SettingsStore(app)
+
+    val apps: StateFlow<List<AppEntry>> = repo.apps
+    /** Debug builds only: home settings shown without being saved (`--es pinned …`, see MainActivity). */
+    val homePreview = MutableStateFlow(HomePreview())
+
+    val prefs: StateFlow<LauncherPrefs> =
+        combine(store.prefs, homePreview, repo.apps) { p, preview, apps -> preview.applyTo(p, apps) }
+            .stateIn(scope, SharingStarted.Eagerly, LauncherPrefs())
+    val theme: StateFlow<Theme> =
+        store.theme.stateIn(scope, SharingStarted.Eagerly, Presets.default.theme)
+    val userPresets: StateFlow<List<Preset>> =
+        store.presets.stateIn(scope, SharingStarted.Eagerly, emptyList())
+    val monitor: StateFlow<MonitorPrefs> =
+        combine(store.monitor, homePreview) { m, preview -> preview.applyTo(m) }
+            .stateIn(scope, SharingStarted.Eagerly, MonitorPrefs())
+    val cover: StateFlow<CoverPrefs> =
+        store.cover.stateIn(scope, SharingStarted.Eagerly, CoverPrefs())
+
+    /** Completed once the saved settings have reached [prefs] and [monitor] (they start as defaults). */
+    private val settingsLoaded = CompletableDeferred<Unit>()
+
+    val shizuku = ShizukuBridge(app).also { ShizukuBridge.current = it }
+    val engine = LogEngine(
+        app, prefs, monitor, apps, shizuku,
+        onShizukuTip = { updateMonitor { it.copy(shizukuTip = true) } },
+        awaitSettings = { settingsLoaded.await() },
+        coverLook = { cover.value.aodLook.takeIf { cover.value.aodMode != AodMode.OFF } },
+    )
+
+    private var snapshotAt = 0L
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (prefs.value.lockMode == LockMode.SNAPSHOT) updateLockSnapshot(force = false)
+        }
+    }
+
+    /** Redraws the lock-screen snapshot; at most once a minute unless [force]d. */
+    fun updateLockSnapshot(force: Boolean = true) {
+        if (safeMode.value) return
+        val now = System.currentTimeMillis()
+        if (!force && now - snapshotAt < 60_000L) return
+        snapshotAt = now
+        scope.launch(Dispatchers.Default) {
+            LockScreen.setSnapshot(getApplication(), engine.freshFrame(), previewTheme ?: theme.value, prefs.value)
+        }
+    }
+
+    /** Debug builds: the snapshot as a file (cache/snapshot.png) rather than the wallpaper. */
+    fun snapshotToFile() {
+        scope.launch(Dispatchers.Default) {
+            val app = getApplication<Application>()
+            val bitmap = LockScreen.render(app, engine.freshFrame(), previewTheme ?: theme.value, prefs.value)
+            File(app.cacheDir, "snapshot.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+    }
+
+    init {
+        ContextCompat.registerReceiver(
+            app, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        scope.launch {
+            try {
+                val m = store.monitor.first()
+                val p = store.prefs.first()
+                // The StateFlows catch up on this same main thread a moment later.
+                withTimeoutOrNull(2_000) {
+                    monitor.first { it == homePreview.value.applyTo(m) }
+                    prefs.first { it == homePreview.value.applyTo(p, repo.apps.value) }
+                }
+                // Before the log starts, so its first line already knows whether Shizuku is on.
+                shizuku.setEnabled(monitor.value.shizuku && !safeMode.value)
+            } finally {
+                settingsLoaded.complete(Unit)
+            }
+            // Shizuku runs only while the user wants it, and never in safe mode.
+            combine(monitor, safeMode) { m, safe -> m.shizuku && !safe }
+                .distinctUntilChanged()
+                .collect { shizuku.setEnabled(it) }
+        }
+        restoreDnsMonitor()
+        // The screen service runs exactly while the always-on display or lock cover is on.
+        scope.launch {
+            combine(store.cover, safeMode) { c, safe -> c to safe }
+                .distinctUntilChanged()
+                .collect { (c, safe) -> ScreenService.sync(getApplication(), c, safe) }
+        }
+    }
+
+    val updates = UpdateChecker(app)
+    private val downloads = UpdateChecker.register(app, updates)
+
+    /** At most once a day, and only while the launcher is in front. */
+    fun checkForUpdate() {
+        if (!safeMode.value) scope.launch { updates.maybeCheck() }
+    }
+
+    /** Restarts the screen service if Android stopped it; called whenever home comes back. */
+    fun ensureScreenService() = ScreenService.sync(getApplication(), cover.value, safeMode.value)
+
+    fun updateCover(transform: (CoverPrefs) -> CoverPrefs) {
+        scope.launch { store.updateCover(transform) }
+    }
+
+    /** Brings the DNS monitor back after the launcher restarts, if the user left it on. */
+    private fun restoreDnsMonitor() {
+        scope.launch {
+            val m = store.monitor.first()
+            if (safeMode.value || !m.dnsVpn || DnsLog.running.value) return@launch
+            val allowed = withContext(Dispatchers.IO) { DnsVpnService.consentIntent(getApplication()) == null }
+            if (allowed) DnsVpnService.start(getApplication())
+        }
+    }
+
+    /** Whether the access behind a one-tap setup item is on already. */
+    fun isGranted(item: SetupItem): Boolean = when (item) {
+        SetupItem.USAGE -> engine.usage.hasAccess()
+        SetupItem.NOTIFICATIONS -> NotifLog.connected
+        SetupItem.LOCK -> LockService.isRunning
+        SetupItem.OVERLAY -> Settings.canDrawOverlays(getApplication())
+    }
+
+    /**
+     * Switches [items] on through Shizuku's shell and reports, per item, whether
+     * it's really on afterwards (Android binds the services a moment later).
+     */
+    suspend fun setUpWithShizuku(items: Set<SetupItem>): Map<SetupItem, Boolean> {
+        val app = getApplication<Application>()
+        val user = android.os.Process.myUid() / 100_000
+        val ran = items.associateWith { ShizukuSetup.apply(it, shizuku, app.packageName, user) }
+        for (i in 0 until 20) {
+            if (items.all { ran[it] != true || isGranted(it) }) break
+            delay(250)
+        }
+        val results = items.associateWith { ran[it] == true && isGranted(it) }
+        if (results[SetupItem.LOCK] == true) update { it.copy(doubleTapLock = true) }
+        return results
+    }
+
+    /** Back to normal after safe mode: the log, Shizuku and the DNS monitor start again. */
+    fun leaveSafeMode() {
+        CrashGuard.leaveSafeMode(getApplication())
+        safeMode.value = false
+        restoreDnsMonitor()
+    }
+
+    /** Bumped when imported fonts change, so font lists re-read the directory. */
+    var fontsVersion by mutableIntStateOf(0)
+
+    var screen by mutableStateOf(Screen.HOME)
+
+    /** A settings page to open next time settings show (debug `--es page …`). */
+    var requestedPage by mutableStateOf<Page?>(null)
+
+    /** Debug builds only: a preset shown without being saved (`adb shell am start … --es preview <name>`). */
+    var previewTheme by mutableStateOf<Theme?>(null)
+
+    /** Debug builds only: a log layout shown without being saved (`--es layout feed`, `--es feed bottom`). */
+    var previewLayout by mutableStateOf<LogLayout?>(null)
+    var previewFeedTop by mutableStateOf<Boolean?>(null)
+
+    /** How many menu entries fit in the home screen's free vertical space; set by the home layout. */
+    var menuCapacity by mutableIntStateOf(Int.MAX_VALUE)
+
+    fun label(entry: AppEntry): String = prefs.value.renames[entry.key] ?: entry.label
+
+    fun launch(key: AppKey): Boolean {
+        val ok = repo.launch(key)
+        if (ok) screen = Screen.HOME
+        return ok
+    }
+
+    fun update(transform: (LauncherPrefs) -> LauncherPrefs) {
+        scope.launch { store.update(transform) }
+    }
+
+    /** False when the home screen has no vertical room left. */
+    fun pin(key: AppKey): Boolean {
+        val p = prefs.value
+        if (key in p.pinned) return true
+        if (p.pinned.size >= menuCapacity) return false
+        update { it.copy(pinned = it.pinned + key) }
+        return true
+    }
+
+    fun unpin(key: AppKey) = update { it.copy(pinned = it.pinned - key) }
+
+    fun move(key: AppKey, delta: Int) = update {
+        val list = it.pinned.toMutableList()
+        val from = list.indexOf(key)
+        // Not in the saved list (any more): nothing to move. Checked first, as an empty
+        // list has no index range to clamp to.
+        if (from < 0) return@update it
+        val to = (from + delta).coerceIn(0, list.lastIndex)
+        if (from == to) it else it.copy(pinned = list.apply { add(to, removeAt(from)) })
+    }
+
+    fun rename(key: AppKey, label: String) = update {
+        it.copy(renames = if (label.isBlank()) it.renames - key else it.renames + (key to label.trim()))
+    }
+
+    fun hide(key: AppKey) = update { it.copy(hidden = it.hidden + key, pinned = it.pinned - key) }
+    fun unhide(key: AppKey) = update { it.copy(hidden = it.hidden - key) }
+
+    // --- log rows ---
+
+    fun toggleRow(id: String) = update {
+        it.copy(logRows = if (id in it.logRows) it.logRows - id else it.logRows + id)
+    }
+
+    fun sortRows() = update { it.copy(logRows = LauncherPrefs.sortedRows(it.logRows)) }
+
+    /** Back to the rows a fresh install shows, in their order. */
+    fun resetRows() = update { it.copy(logRows = ProbeCatalog.defaultIds) }
+
+    fun moveRow(id: String, delta: Int) = update {
+        val list = it.logRows.toMutableList()
+        val from = list.indexOf(id)
+        // Not in the saved list (any more): nothing to move. Checked first, as an empty
+        // list has no index range to clamp to.
+        if (from < 0) return@update it
+        val to = (from + delta).coerceIn(0, list.lastIndex)
+        if (from == to) it else it.copy(logRows = list.apply { add(to, removeAt(from)) })
+    }
+
+    fun updateMonitor(transform: (MonitorPrefs) -> MonitorPrefs) {
+        scope.launch { store.updateMonitor(transform) }
+    }
+
+    // --- appearance ---
+
+    fun updateTheme(transform: (Theme) -> Theme) {
+        scope.launch { store.updateTheme(transform) }
+    }
+
+    /** The theme, plus the always-on look and lock preset a built-in preset comes with. */
+    fun applyPreset(p: Preset) {
+        // One job, in order: the screens never see the new look with the old theme, or the reverse.
+        scope.launch {
+            store.updateTheme { p.theme }
+            p.screen?.let { s -> store.updateCover { it.copy(aodLook = s.aodLook, lockPreset = s.lockPreset, aodColor = s.aodColor) } }
+        }
+    }
+
+    /** Saves the colours and fonts with the current always-on look and lock preset. */
+    fun savePreset(name: String) {
+        val c = cover.value
+        val preset = Preset(name.trim(), theme.value, PresetScreen(c.aodLook, c.lockPreset, c.aodColor))
+        scope.launch { store.updatePresets { list -> list.filter { it.name != preset.name } + preset } }
+    }
+
+    fun deletePreset(name: String) {
+        scope.launch { store.updatePresets { list -> list.filter { it.name != name } } }
+    }
+
+    /** Imports a font file and applies it to [element]; false if the file isn't a font. */
+    suspend fun importFont(uri: Uri, element: StyleElement): Boolean {
+        val font = withContext(Dispatchers.IO) { Fonts.import(getApplication(), uri) } ?: return false
+        fontsVersion++
+        updateTheme { it.with(element, it.spec(element).copy(font = font.id)) }
+        return true
+    }
+
+    fun deleteFont(id: String) {
+        Fonts.delete(getApplication(), id)
+        fontsVersion++
+        updateTheme { it.replacingFont(id, "system-mono") }
+        scope.launch {
+            store.updatePresets { list -> list.map { p -> p.copy(theme = p.theme.replacingFont(id, "system-mono")) } }
+        }
+    }
+
+    override fun onCleared() {
+        runCatching { getApplication<Application>().unregisterReceiver(screenOff) }
+        runCatching { getApplication<Application>().unregisterReceiver(downloads) }
+        repo.close()
+        shizuku.close()
+    }
+
+    private companion object {
+        const val TAG = "DroidTTY"
+    }
+}

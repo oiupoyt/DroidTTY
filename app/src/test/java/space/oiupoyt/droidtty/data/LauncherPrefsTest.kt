@@ -1,0 +1,31 @@
+package space.oiupoyt.droidtty.data
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class LauncherPrefsTest {
+
+    @Test
+    fun noSavedBannerIsTheDefault() {
+        assertEquals(LauncherPrefs.DEFAULT_BANNER, LauncherPrefs.bannerFrom(null))
+    }
+
+    @Test
+    fun theUneditedPreviousDefaultFollowsTheNewOne() {
+        assertEquals(LauncherPrefs.DEFAULT_BANNER, LauncherPrefs.bannerFrom(LauncherPrefs.PREVIOUS_DEFAULT_BANNER))
+    }
+
+    @Test
+    fun anEditedBannerStaysAsItIs() {
+        val mine = "MY PHONE\n{date}"
+        assertEquals(mine, LauncherPrefs.bannerFrom(mine))
+        assertEquals("", LauncherPrefs.bannerFrom(""))
+    }
+}
+
+class RowSortTest {
+    @org.junit.Test
+    fun sortsByNameCaseInsensitively() {
+        org.junit.Assert.assertEquals(listOf("bat", "cpu", "Mem", "net"), LauncherPrefs.sortedRows(listOf("net", "Mem", "bat", "cpu")))
+    }
+}

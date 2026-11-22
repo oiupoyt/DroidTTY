@@ -1,0 +1,1 @@
+Internal rename: the code now lives under space.oiupoyt.droidtty, matching the app id. Android records the lock service and notification access by name, so after updating switch both on again (settings, get started: each opens the right switch). Your settings and PIN are kept.

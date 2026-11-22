@@ -15,7 +15,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.asnidev.sysreadout"
+    namespace = "space.oiupoyt.droidtty"
     compileSdk = 36
 
     defaultConfig {
@@ -23,8 +23,8 @@ android {
         applicationId = "space.oiupoyt.droidtty"
         minSdk = 26
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.5.6"
+        versionCode = 20
+        versionName = "0.5.7"
     }
 
     signingConfigs {
