@@ -1,6 +1,6 @@
 # DroidTTY
 
-**An Android launcher that turns the phone into a terminal.**
+**Boot your phone like it's 1985.** A retro CRT launcher for Android.
 
 Your apps as a short list of text entries, in front of a live readout of the phone: status rows,
 process and connection tables, a scrolling event log. Around it: an always-on display with animated

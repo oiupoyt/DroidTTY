@@ -1,1 +1,1 @@
-Terminal launcher: live system readout, ASCII always-on display, boot lockscreen
+Retro CRT launcher: live system readout, ASCII always-on display, boot screens
