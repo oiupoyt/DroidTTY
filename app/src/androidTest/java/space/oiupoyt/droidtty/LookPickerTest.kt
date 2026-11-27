@@ -64,11 +64,12 @@ class LookPickerTest {
         rule.onNodeWithText("${AodLook.CLOCK.title()} ›").performClick()
 
         val list = rule.onNode(hasScrollToIndexAction())
+        // Each header once; only items in view are composed, so count each while it shows.
         list.performScrollToNode(hasText("## still"))
+        rule.onAllNodes(hasText("## still")).assertCountEquals(1)
         // Walking the whole list composes every item, so a repeated key would throw here.
         AodLook.entries.filter { it != AodLook.CLOCK }.forEach { list.performScrollToNode(option(it)) }
         list.performScrollToNode(hasText("## animated (more battery)"))
-        rule.onAllNodes(hasText("## still")).assertCountEquals(1)
         rule.onAllNodes(hasText("## animated (more battery)")).assertCountEquals(1)
 
         list.performScrollToNode(option(AodLook.HELIX))
