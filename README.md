@@ -130,7 +130,8 @@ Without it, `assembleRelease` produces an unsigned APK. CI gets the same values 
 
 1. Bump `versionCode` (+1) and `versionName` in `app/build.gradle.kts`, and add `metadata/en-US/changelogs/<versionCode>.txt`.
 2. Push to `main`: CI publishes a rolling `latest` release on GitHub and mirrors it to Forgejo (needs the `FORGEJO_TOKEN` secret).
-3. Tag the commit `vX.Y.Z` and push the tag: `release-tag.yml` publishes a permanent release on both.
+3. Tag the commit `vX.Y.Z` and push the tag: `release-tag.yml` publishes a permanent release on both, with `DroidTTY.apk` (the GitHub build, which installs its own updates), `DroidTTY-fdroid.apk` (what F-Droid's reproducible build is checked against) and `DroidTTY-play.aab` (for Google Play; see [docs/PLAY.md](docs/PLAY.md)).
+4. Add the new version to `Builds` in `.fdroid.yml` (`gradle: [fdroid]`) and bump `CurrentVersion`.
 
 Signing certificate SHA-256: `39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58ac277e8`
 

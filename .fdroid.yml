@@ -19,26 +19,19 @@ Repo: https://github.com/oiupoyt/DroidTTY.git
 # Each version tag also publishes a GitHub Release at that tag
 # (.github/workflows/release-tag.yml) carrying the identical, developer-signed
 # APK, so F-Droid's reproducible-build check can diff its own build against it.
-Binaries: https://github.com/oiupoyt/DroidTTY/releases/download/v%v/DroidTTY.apk
+Binaries: https://github.com/oiupoyt/DroidTTY/releases/download/v%v/DroidTTY-fdroid.apk
 
 Builds:
-  - versionName: 0.5.6
-    versionCode: 19
+  - versionName: 0.6.0
+    versionCode: 21
     # The tag rather than a hash: this file is part of the tagged commit.
-    commit: v0.5.6
-    subdir: app
-    gradle:
-      - yes
-
-  - versionName: 0.5.7
-    versionCode: 20
-    # The tag rather than a hash: this file is part of the tagged commit.
-    commit: v0.5.7
+    commit: v0.6.0
     # The Gradle root is the repo root; F-Droid looks for the output APK under
     # <subdir>/build/outputs/apk, so this must be the app module itself.
     subdir: app
+    # The F-Droid build: no self-updater, no install permission, no Play libraries.
     gradle:
-      - yes
+      - fdroid
 
 # SHA-256 of the fork's signing certificate (release.yml / release-tag.yml sign with it).
 AllowedAPKSigningKeys: 39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58ac277e8
@@ -46,5 +39,5 @@ AllowedAPKSigningKeys: 39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58
 AutoUpdateMode: Version
 # Only vX.Y.Z tags are releases; `latest` is CI's rolling pre-release build.
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.5.7
-CurrentVersionCode: 20
+CurrentVersion: 0.6.0
+CurrentVersionCode: 21
