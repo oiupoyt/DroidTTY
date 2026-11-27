@@ -24,8 +24,13 @@ fi
 body=$(python3 -c 'import json,sys; print(json.dumps({"tag_name": sys.argv[1], "name": sys.argv[2], "body": open(sys.argv[3]).read(), "prerelease": sys.argv[4] == "true"}))' "$TAG" "$TITLE" "$NOTES" "$PRE")
 id=$(curl -fsS -X POST "${auth[@]}" -H 'Content-Type: application/json' -d "$body" "$API/repos/$REPO/releases" \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
-for file in "$APK" "$(dirname "$APK")/version.json"; do
+# The APK named on the command line, and everything staged beside it (version.json, the
+# F-Droid APK and the Play bundle for tagged releases).
+uploaded=()
+for file in "$APK" "$(dirname "$APK")"/*; do
   [ -f "$file" ] || continue
+  [[ " ${uploaded[*]} " == *" $(basename "$file") "* ]] && continue
+  uploaded+=("$(basename "$file")")
   curl -fsS -X POST "${auth[@]}" -F "attachment=@$file" "$API/repos/$REPO/releases/$id/assets?name=$(basename "$file")" >/dev/null
 done
 echo "forgejo release $TAG -> $API/repos/$REPO/releases/$id"

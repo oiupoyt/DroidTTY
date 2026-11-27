@@ -101,7 +101,7 @@ private fun TextDialog(title: String, text: String, onDismiss: () -> Unit) {
     )
 }
 
-/** The update check: on by default, once a day; a newer version downloads and opens Android's installer. */
+/** The update check: on by default, once a day; what a new version's link does depends on the build. */
 @Composable
 private fun UpdatesSection(updates: UpdateChecker) {
     val context = LocalContext.current
@@ -126,15 +126,11 @@ private fun UpdatesSection(updates: UpdateChecker) {
             Link("allow notifications", "›") { askNotify.launch(Manifest.permission.POST_NOTIFICATIONS) }
         }
     }
-    Note(
-        "once a day, droidtty reads one small file from its github releases to see if there's a newer version. " +
-            "nothing about you or your phone is sent. a new version shows a notification; tapping it downloads the " +
-            "apk and android's installer asks before replacing anything.",
-    )
+    Note(updates.channel.about)
     val r = available
     if (r != null) {
-        Link("install ${r.versionName}", "download ›") {
-            if (!updates.download()) status = "couldn't start the download"
+        Link(if (r.versionName.isBlank()) "update droidtty" else "update to ${r.versionName}", updates.channel.actionLabel) {
+            if (!updates.act()) status = "couldn't open the update"
         }
         if (r.notes.isNotBlank()) Note(r.notes)
     }
@@ -146,9 +142,9 @@ private fun UpdatesSection(updates: UpdateChecker) {
             checking = false
             available = updates.available
             status = when {
-                found == null -> "couldn't reach github; try again later"
+                found == null -> "couldn't reach ${updates.channel.sourceName}; try again later"
                 updates.available == null -> "you have the newest version (${BuildConfig.VERSION_NAME})"
-                else -> "${found.versionName} is out"
+                else -> Updates.title(found)
             }
         }
     }

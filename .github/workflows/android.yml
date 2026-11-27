@@ -19,14 +19,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # All three store builds compile and pass lint; unit tests run once, on the sideloaded build.
       - name: Assemble + lint + unit tests
-        run: ./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest --stacktrace
+        run: >-
+          ./gradlew --stacktrace
+          :app:assembleGithubDebug :app:assembleFdroidDebug :app:assemblePlayDebug
+          :app:lintGithubDebug :app:lintFdroidDebug :app:lintPlayDebug
+          :app:testGithubDebugUnitTest
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-test-results
-          path: app/build/test-results/testDebugUnitTest/
+          path: app/build/test-results/testGithubDebugUnitTest/
           if-no-files-found: warn
 
       - uses: actions/upload-artifact@v4
@@ -38,5 +43,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/github/debug/app-github-debug.apk
           if-no-files-found: error

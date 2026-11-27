@@ -71,10 +71,10 @@ class MainActivity : ComponentActivity() {
      * `--es halign center`, `--es valign top`,
      * `--ez shizuku true`. Force-stopping the app drops all of them.
      */
-    /** The update notification's tap: download and install. */
+    /** The update notification's tap: install it, or open the store that does. */
     private fun handleUpdate(intent: Intent?) {
-        if (intent?.action == UpdateChecker.ACTION_DOWNLOAD && !vm.updates.download()) {
-            Toast.makeText(this, "no update to download", Toast.LENGTH_SHORT).show()
+        if (intent?.action == UpdateChecker.ACTION_UPDATE && !vm.updates.act()) {
+            Toast.makeText(this, "no update waiting", Toast.LENGTH_SHORT).show()
         }
     }
 

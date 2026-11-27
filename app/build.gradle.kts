@@ -38,6 +38,23 @@ android {
         }
     }
 
+    // Where the app is published, which decides only how updates arrive:
+    // github installs its own updates (sideloaded from GitHub and Forgejo); fdroid and play
+    // only send a notification, and the store does the installing.
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") {
+            dimension = "store"
+            isDefault = true
+        }
+        create("fdroid") {
+            dimension = "store"
+        }
+        create("play") {
+            dimension = "store"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -98,6 +115,9 @@ dependencies {
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.ui:ui-tooling-preview")
+
+    // Play's own update check (play build only; proprietary, so never in the others).
+    "playImplementation"("com.google.android.play:app-update-ktx:2.1.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")

@@ -201,7 +201,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val updates = UpdateChecker(app)
-    private val downloads = UpdateChecker.register(app, updates)
+    private val downloads = UpdateChecker.register(updates)
 
     /** At most once a day, and only while the launcher is in front. */
     fun checkForUpdate() {
@@ -385,7 +385,7 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         runCatching { getApplication<Application>().unregisterReceiver(screenOff) }
-        runCatching { getApplication<Application>().unregisterReceiver(downloads) }
+        downloads?.let { r -> runCatching { getApplication<Application>().unregisterReceiver(r) } }
         repo.close()
         shizuku.close()
     }

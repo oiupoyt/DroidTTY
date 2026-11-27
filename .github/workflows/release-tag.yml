@@ -84,18 +84,28 @@ jobs:
             echo "No RELEASE_KEYSTORE_B64 secret — APK will be unsigned."
           fi
 
+      # The sideloaded APK, the F-Droid APK (for F-Droid's reproducible-build check) and the
+      # Play bundle, all signed with the same key.
       - name: Assemble release
-        run: ./gradlew :app:assembleRelease --stacktrace
+        run: ./gradlew :app:assembleGithubRelease :app:assembleFdroidRelease :app:bundlePlayRelease --stacktrace
 
       - name: Stage APK
         id: stage
         run: |
           set -e
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           VNAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          VCODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          TAG="${{ inputs.tag || github.ref_name }}"
           echo "vname=$VNAME" >> "$GITHUB_OUTPUT"
           mkdir -p release-artifacts
-          cp "$APK" release-artifacts/DroidTTY.apk
+          cp "$(find app/build/outputs/apk/github/release -name '*.apk' | head -1)" release-artifacts/DroidTTY.apk
+          cp "$(find app/build/outputs/apk/fdroid/release -name '*.apk' | head -1)" release-artifacts/DroidTTY-fdroid.apk
+          cp "$(find app/build/outputs/bundle/playRelease -name '*.aab' | head -1)" release-artifacts/DroidTTY-play.aab
+          # Read by the F-Droid build's update check (releases/latest/download/version.json).
+          NOTES="metadata/en-US/changelogs/$VCODE.txt"
+          python3 -c 'import json,sys,os; print(json.dumps({"versionCode": int(sys.argv[1]), "versionName": sys.argv[2], "apk": sys.argv[3], "notes": open(sys.argv[4]).read().strip() if os.path.exists(sys.argv[4]) else ""}))' \
+            "$VCODE" "$VNAME" "https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG/DroidTTY.apk" "$NOTES" \
+            > release-artifacts/version.json
 
       - name: Publish versioned release
         env:
@@ -108,9 +118,12 @@ jobs:
             [ -f "$NOTES" ] && cat "$NOTES" && echo
             echo "Install: https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG/DroidTTY.apk"
             echo
+            echo "DroidTTY-fdroid.apk is the F-Droid build (updates come through F-Droid); DroidTTY-play.aab is the bundle for Google Play."
+            echo
             echo "Signing certificate SHA-256: 39caf48edfbc24d784220093324df2efab10620f457a01ba68a6e1b58ac277e8"
           } > release-notes.md
-          gh release create "$TAG" release-artifacts/DroidTTY.apk \
+          gh release create "$TAG" release-artifacts/DroidTTY.apk release-artifacts/DroidTTY-fdroid.apk \
+            release-artifacts/DroidTTY-play.aab release-artifacts/version.json \
             --title "DroidTTY ${{ steps.stage.outputs.vname }}" \
             --notes-file release-notes.md
 

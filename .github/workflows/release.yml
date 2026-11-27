@@ -62,13 +62,13 @@ jobs:
           fi
 
       - name: Assemble release
-        run: ./gradlew :app:assembleRelease --stacktrace
+        run: ./gradlew :app:assembleGithubRelease --stacktrace
 
       - name: Stage APK
         id: stage
         run: |
           set -e
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          APK=$(find app/build/outputs/apk/github/release -name "*.apk" | head -1)
           VNAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
           echo "vname=$VNAME" >> "$GITHUB_OUTPUT"
           mkdir -p release-artifacts
