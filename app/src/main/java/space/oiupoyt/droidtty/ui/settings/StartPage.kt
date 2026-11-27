@@ -32,7 +32,8 @@ fun StartPage(vm: LauncherViewModel, open: (Page) -> Unit) {
         resumed++
         onPauseOrDispose {}
     }
-    val steps = remember(resumed) { steps(context, vm) }
+    val requestLock = rememberLockServiceRequest()
+    val steps = remember(resumed) { steps(context, vm, requestLock) }
     val done = steps.count { it.done }
 
     Section("access · $done of ${steps.size}")
@@ -51,13 +52,13 @@ fun StartPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     Link("what the log shows", "›") { open(Page.Log) }
 }
 
-private fun steps(context: Context, vm: LauncherViewModel): List<Step> = listOf(
+private fun steps(context: Context, vm: LauncherViewModel, requestLock: () -> Unit): List<Step> = listOf(
     Step("home app", "droidtty as your home screen", SystemActions.isDefaultLauncher(context)) { Grants.homeApp(it) },
     Step(
         "lock service",
         "always-on display, lock screens, the shade and double-tap to lock",
         CoverHost.available,
-    ) { Grants.lockService(it) },
+    ) { requestLock() },
     Step("notification access", "notifications in the shade and log, what's playing", NotifLog.connected) { Grants.notificationAccess(it) },
     Step("usage access", "screen time, app switches, data used", vm.engine.usage.hasAccess()) { Grants.usageAccess(it) },
     Step(

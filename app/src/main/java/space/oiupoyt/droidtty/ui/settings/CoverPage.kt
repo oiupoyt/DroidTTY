@@ -158,7 +158,8 @@ fun CoverPage(vm: LauncherViewModel, open: (Page) -> Unit = {}) {
             "with it on there's no permanent notification; without it, the always-on display and boot screen fall " +
             "back to \"display over other apps\" and a background service that android requires to show a notification.",
     )
-    SettingRow("lock service", if (host) "on" else "turn on ›") { if (!host) Grants.lockService(context) }
+    val requestLock = rememberLockServiceRequest()
+    SettingRow("lock service", if (host) "on" else "turn on ›") { if (!host) requestLock() }
     if (!host) {
         SettingRow("display over other apps", if (overlay) "on" else "grant ›") { if (!overlay) Grants.overlay(context) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

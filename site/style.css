@@ -405,3 +405,19 @@ section {
    app's own crt effects, so the site's scanlines and vignette stay off it. */
 .screen.scr-home::after { display: none; }
 .s-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; filter: url(#retint-shot); }
+
+/* ---- privacy policy page ---- */
+.policy section { max-width: 860px; margin: 0 auto; padding-left: clamp(16px, 5vw, 64px); padding-right: clamp(16px, 5vw, 64px); }
+.policy h1 { font-size: clamp(40px, 6vw, 64px); }
+.policy h2 { font-size: 30px; margin: 34px 0 8px; }
+.policy p, .policy li { max-width: 72ch; }
+.policy ul { padding-left: 20px; }
+.policy li { margin: 8px 0; }
+.policy table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+.policy th, .policy td { text-align: left; vertical-align: top; padding: 10px 12px; border: 1px solid var(--line); }
+.policy th { color: var(--fg); font-weight: 400; background: var(--surface); }
+.policy td:first-child { color: var(--fg); width: 30%; }
+@media (max-width: 620px) {
+  .policy td:first-child { width: auto; }
+  .policy th, .policy td { padding: 8px; }
+}

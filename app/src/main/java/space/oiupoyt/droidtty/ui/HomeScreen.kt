@@ -1,7 +1,7 @@
 package space.oiupoyt.droidtty.ui
 
 import android.text.format.DateFormat
-import space.oiupoyt.droidtty.system.Grants
+import space.oiupoyt.droidtty.ui.settings.rememberLockServiceRequest
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -94,6 +94,8 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
         }
     }
 
+    val requestLock = rememberLockServiceRequest()
+
     Column(
         Modifier
             .fillMaxSize()
@@ -101,10 +103,7 @@ fun HomeScreen(vm: LauncherViewModel, haze: HazeState) {
                 detectTapGestures(
                     onLongPress = { vm.screen = Screen.SETTINGS },
                     onDoubleTap = {
-                        if (currentPrefs.doubleTapLock && !LockService.lock()) {
-                            Toast.makeText(context, "enable the lock service in accessibility settings", Toast.LENGTH_SHORT).show()
-                            Grants.lockService(context)
-                        }
+                        if (currentPrefs.doubleTapLock && !LockService.lock()) requestLock()
                     },
                 )
             }

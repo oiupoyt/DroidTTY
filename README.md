@@ -99,6 +99,8 @@ Nothing beyond the basics is used until you switch on the feature that needs it,
 
 ## Privacy
 
+The full policy is at [droidtty.oiupoyt.space/privacy](https://droidtty.oiupoyt.space/privacy).
+
 No ads, no analytics, no tracking, no accounts. The daily update check downloads one public file and sends nothing about you or your phone. Everything is read on the phone and kept in memory; nothing is written anywhere except your settings, the own lock's PIN hash (in storage that's never backed up), and, if DroidTTY crashes, the last crash report, which stays on the phone until you share or delete it. The log stops when the home screen isn't visible.
 
 ## Build

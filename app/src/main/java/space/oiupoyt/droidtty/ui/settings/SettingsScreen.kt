@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import android.os.PowerManager
 import android.content.Context
 import android.os.Build
-import space.oiupoyt.droidtty.system.Grants
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -185,9 +184,10 @@ private fun RootPage(vm: LauncherViewModel, open: (Page) -> Unit) {
     Link("swipe left", appName(prefs.swipeLeft)) { picking = Picking.LEFT }
     Link("swipe right", appName(prefs.swipeRight)) { picking = Picking.RIGHT }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val requestLock = rememberLockServiceRequest()
         Toggle("double-tap to lock", prefs.doubleTapLock) { v ->
             vm.update { it.copy(doubleTapLock = v) }
-            if (v && !LockService.isRunning) Grants.lockService(context)
+            if (v && !LockService.isRunning) requestLock()
         }
     } else {
         Note("double-tap to lock needs Android 9 or newer.")

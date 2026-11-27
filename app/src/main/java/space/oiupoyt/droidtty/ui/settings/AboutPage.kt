@@ -35,6 +35,7 @@ import space.oiupoyt.droidtty.ui.Fonts
 import space.oiupoyt.droidtty.ui.Type
 
 private const val REPO = "https://github.com/oiupoyt/DroidTTY"
+private const val PRIVACY = "https://droidtty.oiupoyt.space/privacy"
 
 @Composable
 fun AboutPage(updates: UpdateChecker? = null) {
@@ -47,6 +48,7 @@ fun AboutPage(updates: UpdateChecker? = null) {
     Section("droidtty launcher")
     Note("v${BuildConfig.VERSION_NAME} · free software under the GNU GPL v3")
     Link("source code and issues", "github ›") { SystemActions.openUrl(context, REPO) }
+    Link("privacy policy", "›") { SystemActions.openUrl(context, PRIVACY) }
 
     if (updates != null) UpdatesSection(updates)
 

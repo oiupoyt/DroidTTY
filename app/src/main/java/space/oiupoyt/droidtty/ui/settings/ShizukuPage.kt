@@ -147,6 +147,34 @@ private fun SetupDialog(vm: LauncherViewModel, onDismiss: () -> Unit) {
     var chosen by remember { mutableStateOf(ShizukuSetup.items.toSet() - already) }
     var results by remember { mutableStateOf<Map<SetupItem, Boolean>?>(null) }
     var working by remember { mutableStateOf(false) }
+    var disclosing by remember { mutableStateOf(false) }
+
+    fun run(items: Set<SetupItem>) {
+        if (items.isEmpty()) {
+            onDismiss()
+            return
+        }
+        working = true
+        scope.launch {
+            results = vm.setUpWithShizuku(items)
+            working = false
+        }
+    }
+
+    if (disclosing) {
+        LockServiceDisclosure(
+            onAgree = {
+                disclosing = false
+                run(chosen)
+            },
+            // Not now: everything else still gets switched on.
+            onDismiss = {
+                disclosing = false
+                chosen = chosen - SetupItem.LOCK
+                run(chosen)
+            },
+        )
+    }
 
     AlertDialog(
         onDismissRequest = { if (!working) onDismiss() },
@@ -179,13 +207,7 @@ private fun SetupDialog(vm: LauncherViewModel, onDismiss: () -> Unit) {
             if (results == null) {
                 TextButton(
                     enabled = chosen.isNotEmpty() && !working,
-                    onClick = {
-                        working = true
-                        scope.launch {
-                            results = vm.setUpWithShizuku(chosen)
-                            working = false
-                        }
-                    },
+                    onClick = { if (SetupItem.LOCK in chosen) disclosing = true else run(chosen) },
                 ) { Text(if (working) "working…" else "switch on", style = Type.row) }
             } else {
                 TextButton(onClick = onDismiss) { Text("done", style = Type.row) }
